@@ -31,11 +31,6 @@ setup(
         'nose',
         'mock >= 1.0',
     ],
-    entry_points={
-        'mopidy.ext': [
-            'evtdev = mopidy_evtdev:Extension',
-        ],
-    },
     classifiers=[
         'Environment :: No Input/Output (Daemon)',
         'Intended Audience :: End Users/Desktop',
