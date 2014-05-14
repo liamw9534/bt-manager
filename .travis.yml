@@ -9,7 +9,7 @@ install:
 
 script:
   - "flake8 $(find . -iname '*.py')"
-  - "nosetests --with-coverage --cover-package=bt-manager"
+  - "nosetests --with-coverage --cover-package=bt_manager"
 
 after_success:
   - "coveralls"
