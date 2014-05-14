@@ -32,6 +32,7 @@ class BTUUID:
     def __repr__(self):
         return 'uuid = ' + self.uuid + ' : ' + self.name + ' : ' + self.desc
 
+
 class BTUUID16(BTUUID):
 
     def __init__(self, uuid, name, desc=None):
@@ -45,4 +46,4 @@ class BTUUID32(BTUUID):
 
 
 BASE_UUID = BTUUID(uuid=_BASE_UUID, name='BASE_UUID',
-                 desc='Base Universally Unique Identifier')
+                   desc='Base Universally Unique Identifier')

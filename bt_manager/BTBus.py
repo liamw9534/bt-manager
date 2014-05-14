@@ -9,17 +9,17 @@ import types
 def _translate_to_dbus_type(value):
     """Helper function to map values from their native Python types
     to Dbus types"""
-    if (type(value) is list):
+    if (isinstance(value, list)):
         return dbus.Array([_translate_to_dbus_type(k) for k in value])
-    elif (type(value) is int and value < 0):
+    elif (isinstance(value, int) and value < 0):
         return dbus.Int32(value)
-    elif (type(value) is int and value >= 0):
+    elif (isinstance(value, int) and value >= 0):
         return dbus.UInt32(value)
-    elif (type(value) is str):
+    elif (isinstance(value, str)):
         return dbus.String(value)
-    elif (type(value) is bool):
+    elif (isinstance(value, bool)):
         return dbus.Boolean(value)
-    elif (type(value) is types.UnicodeType):
+    elif (isinstance(value, types.UnicodeType)):
         return dbus.String(value)
     else:
         return value
@@ -63,12 +63,14 @@ class BTAdapter(BTInterface):
     def __init__(self, dev_id=None):
         manager = BTManager()
         if (dev_id is None):
-            adapter_path = manager.default_adapter() 
+            adapter_path = manager.default_adapter()
         else:
             adapter_path = manager.find_adapter(dev_id)
         self._cb_user = {}
-        self._cb_internal = {BTAdapter.SIGNAL_NAME_DEVICE_FOUND: self._device_found_signal_handler,
-                             BTAdapter.SIGNAL_NAME_PROPERTY_CHANGED: self._property_changed_signal_handler}
+        self._cb_internal = {BTAdapter.SIGNAL_NAME_DEVICE_FOUND:
+                             self._device_found_signal_handler,
+                             BTAdapter.SIGNAL_NAME_PROPERTY_CHANGED:
+                             self._property_changed_signal_handler}
         BTInterface.__init__(self, adapter_path, 'org.bluez.Adapter')
         self._properties = self._interface.GetProperties().keys()
 
@@ -95,7 +97,7 @@ class BTAdapter(BTInterface):
             self._cb_user[signal_name] = UserCallback(callback_fn, user_arg)
             self._bus.add_signal_receiver(cb,
                                           signal_name,
-                                          dbus_interface = "org.bluez.Adapter")
+                                          dbus_interface="org.bluez.Adapter")
         else:
             raise BTSignalNameNotRecognisedException
 
@@ -105,13 +107,14 @@ class BTAdapter(BTInterface):
         if (cb):
             self._bus.remove_signal_receiver(cb,
                                              signal_name,
-                                             dbus_interface = "org.bluez.Adapter")
+                                             dbus_interface="org.bluez.Adapter")   # noqa
             self._cb_user.pop(signal_name)
         else:
             raise BTSignalNameNotRecognisedException
 
     def start_discovery(self):
-        """Start device discovery which will signal events on installed notifiers"""
+        """Start device discovery which will signal
+        events on installed notifiers"""
         return self._interface.StartDiscovery()
 
     def stop_discovery(self):
@@ -126,14 +129,17 @@ class BTAdapter(BTInterface):
         """List all registered BT devices by their DBus object path"""
         return self._interface.ListDevices()
 
-    def create_paired_device(self, dev_id, path, caps, cb_notify_device, cb_notify_error):
-        """Create a new paired device entry for this adapter by device MAC addr"""
+    def create_paired_device(self, dev_id, path,
+                             caps, cb_notify_device, cb_notify_error):
+        """Create a new paired device entry for
+        this adapter by device MAC addr"""
         return self._interface.CreatePairedDevice(dev_id, path,
                                                   caps, cb_notify_device,
                                                   cb_notify_error)
 
     def remove_device(self, dev_id):
-        """Remove an existing paired device entry on this adapter by device MAC addr"""
+        """Remove an existing paired device entry
+        on this adapter by device MAC addr"""
         dev_obj = self.find_device(dev_id)
         if (dev_obj):
             self._interface.RemoveDevice(dev_obj)
@@ -246,8 +252,8 @@ class BTAgent(dbus.service.Object):
                  capability='DisplayYesNo',
                  path='/test/agent',
                  auto_authorize_connections=True,
-                 default_pin_code = '0000',
-                 default_pass_key = 0x12345678L,
+                 default_pin_code='0000',
+                 default_pass_key=0x12345678L,
                  cb_notify_on_release=None,
                  cb_notify_on_authorize=None,
                  cb_notify_on_request_pin_code=None,
@@ -265,8 +271,10 @@ class BTAgent(dbus.service.Object):
         self.cb_notify_on_request_pin_code = cb_notify_on_request_pin_code
         self.cb_notify_on_request_pass_key = cb_notify_on_request_pass_key
         self.cb_notify_on_display_pass_key = cb_notify_on_display_pass_key
-        self.cb_notify_on_request_confirmation = cb_notify_on_request_confirmation
-        self.cb_notify_on_confirm_mode_change = cb_notify_on_confirm_mode_change
+        self.cb_notify_on_request_confirmation = \
+            cb_notify_on_request_confirmation
+        self.cb_notify_on_confirm_mode_change = \
+            cb_notify_on_confirm_mode_change
         self.cb_notify_on_cancel = cb_notify_on_cancel
         bus = dbus.SystemBus()
         super(BTAgent, self).__init__(bus, path)
@@ -277,7 +285,8 @@ class BTAgent(dbus.service.Object):
         if (self.cb_notify_on_release):
             self.cb_notify_on_release()
 
-    @dbus.service.method("org.bluez.Agent", in_signature="os", out_signature="")
+    @dbus.service.method("org.bluez.Agent", in_signature="os",
+                         out_signature="")
     def Authorize(self, device, uuid):
         if (self.cb_notify_on_authorize):
             if (not self.cb_notify_on_authorize(device, uuid)):
@@ -285,7 +294,8 @@ class BTAgent(dbus.service.Object):
         elif (not self.auto_authorize_connections):
             raise RejectedException('Auto authorize is off')
 
-    @dbus.service.method("org.bluez.Agent", in_signature="o", out_signature="s")
+    @dbus.service.method("org.bluez.Agent", in_signature="o",
+                         out_signature="s")
     def RequestPinCode(self, device):
         if (self.cb_notify_on_request_pin_code):
             pin_code = self.cb_notify_on_request_pin_code(device)
@@ -297,7 +307,8 @@ class BTAgent(dbus.service.Object):
             pin_code = self.default_pin_code
         return dbus.String(pin_code)
 
-    @dbus.service.method("org.bluez.Agent", in_signature="o", out_signature="s")
+    @dbus.service.method("org.bluez.Agent", in_signature="o",
+                         out_signature="s")
     def RequestPasskey(self, device):
         if (self.cb_notify_on_request_pass_key):
             pass_key = self.cb_notify_on_request_pass_key(device)
@@ -309,22 +320,26 @@ class BTAgent(dbus.service.Object):
             pass_key = self.default_pass_key
         return dbus.UInt32(pass_key)
 
-    @dbus.service.method("org.bluez.Agent", in_signature="ou", out_signature="")
+    @dbus.service.method("org.bluez.Agent", in_signature="ou",
+                         out_signature="")
     def DisplayPasskey(self, device, pass_key):
         if (self.cb_notify_on_display_pass_key):
             self.cb_notify_on_display_pass_key(device, pass_key)
 
-    @dbus.service.method("org.bluez.Agent", in_signature="ou", out_signature="")
+    @dbus.service.method("org.bluez.Agent", in_signature="ou",
+                         out_signature="")
     def RequestConfirmation(self, device, pass_key):
         if (self.cb_notify_on_request_confirmation):
             if (not self.cb_notify_on_request_confirmation(device, pass_key)):
-                raise RejectedException('User confirmation of pass key negative')
+                raise \
+                    RejectedException('User confirmation of pass key negative')
 
     @dbus.service.method("org.bluez.Agent", in_signature="s", out_signature="")
     def ConfirmModeChange(self, mode):
         if (self.cb_notify_on_confirm_mode_change):
             if (not self.cb_notify_on_confirm_mode_change(mode)):
-                raise RejectedException('User mode change confirmation negative')
+                raise \
+                    RejectedException('User mode change confirmation negative')
 
     @dbus.service.method("org.bluez.Agent", in_signature="", out_signature="")
     def Cancel(self):

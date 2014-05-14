@@ -12,64 +12,65 @@ class MockDBusInterface:
     def __init__(self, obj, addr):
         self.addr = addr
         if (self.addr == 'org.bluez.Adapter'):
-            self._props = dbus.Dictionary(
-                                   {dbus.String(u'Name'): dbus.String(u'new-name', variant_level=1),
-                                    dbus.String(u'Powered'): dbus.Boolean(True, variant_level=1),
-                                    dbus.String(u'Devices'):
-                                    dbus.Array([dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')],
-                                               signature=dbus.Signature('o'), variant_level=1),
-                                    dbus.String(u'DiscoverableTimeout'): dbus.UInt32(0L, variant_level=1),
-                                    dbus.String(u'PairableTimeout'): dbus.UInt32(0L, variant_level=1),
-                                    dbus.String(u'Discoverable'): dbus.Boolean(True, variant_level=1),
-                                    dbus.String(u'Address'): dbus.String(u'AC:7B:A1:3C:13:82', variant_level=1),
-                                    dbus.String(u'Discovering'): dbus.Boolean(False, variant_level=1),
-                                    dbus.String(u'Pairable'): dbus.Boolean(True, variant_level=1),
-                                    dbus.String(u'Class'): dbus.UInt32(7209216L, variant_level=1),
-                                    dbus.String(u'UUIDs'):
-                                    dbus.Array([dbus.String(u'00001000-0000-1000-8000-00805f9b34fb'),
-                                                dbus.String(u'00001001-0000-1000-8000-00805f9b34fb'),
-                                                dbus.String(u'0000112d-0000-1000-8000-00805f9b34fb'),
-                                                dbus.String(u'00001112-0000-1000-8000-00805f9b34fb'),
-                                                dbus.String(u'0000111f-0000-1000-8000-00805f9b34fb'),
-                                                dbus.String(u'0000111e-0000-1000-8000-00805f9b34fb'),
-                                                dbus.String(u'0000110a-0000-1000-8000-00805f9b34fb'),
-                                                dbus.String(u'0000110b-0000-1000-8000-00805f9b34fb'),
-                                                dbus.String(u'0000110c-0000-1000-8000-00805f9b34fb'),
-                                                dbus.String(u'0000110e-0000-1000-8000-00805f9b34fb'),
-                                                dbus.String(u'00001103-0000-1000-8000-00805f9b34fb')],
-                                               signature=dbus.Signature('s'), variant_level=1)},
-                                   signature=dbus.Signature('sv'))
-        elif (self.addr == 'org.bluez.Device'):
-            self._props = dbus.Dictionary({dbus.String(u'Product'): dbus.UInt16(5028, variant_level=1),
-                                           dbus.String(u'Vendor'): dbus.UInt16(57, variant_level=1),
-                                           dbus.String(u'Name'): dbus.String(u'BTS-06', variant_level=1),
-                                           dbus.String(u'Paired'): dbus.Boolean(True, variant_level=1),
-                                           dbus.String(u'Adapter'): dbus.ObjectPath('/org/bluez/985/hci0',
-                                                                                    variant_level=1),
-                                           dbus.String(u'Alias'): dbus.String(u'BTS-06', variant_level=1),
-                                           dbus.String(u'Version'): dbus.UInt16(260, variant_level=1),
-                                           dbus.String(u'Connected'): dbus.Boolean(False, variant_level=1),
+            self._props = dbus.Dictionary({dbus.String(u'Name'): dbus.String(u'new-name', variant_level=1),  # noqa
+                                           dbus.String(u'Powered'): dbus.Boolean(True, variant_level=1),  # noqa
+                                           dbus.String(u'Devices'):
+                                           dbus.Array([dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')],  # noqa
+                                                      signature=dbus.Signature('o'), variant_level=1),  # noqa
+                                           dbus.String(u'DiscoverableTimeout'): dbus.UInt32(0L, variant_level=1),  # noqa
+                                           dbus.String(u'PairableTimeout'): dbus.UInt32(0L, variant_level=1),  # noqa
+                                           dbus.String(u'Discoverable'): dbus.Boolean(True, variant_level=1),  # noqa
+                                           dbus.String(u'Address'): dbus.String(u'AC:7B:A1:3C:13:82', variant_level=1),  # noqa
+                                           dbus.String(u'Discovering'): dbus.Boolean(False, variant_level=1),  # noqa
+                                           dbus.String(u'Pairable'): dbus.Boolean(True, variant_level=1),  # noqa
+                                           dbus.String(u'Class'): dbus.UInt32(7209216L, variant_level=1),  # noqa
                                            dbus.String(u'UUIDs'):
-                                                dbus.Array([dbus.String(u'00001108-0000-1000-8000-00805f9b34fb'),
-                                                            dbus.String(u'0000110b-0000-1000-8000-00805f9b34fb'),
-                                                            dbus.String(u'0000110c-0000-1000-8000-00805f9b34fb'),
-                                                            dbus.String(u'0000110e-0000-1000-8000-00805f9b34fb'),
-                                                            dbus.String(u'0000111e-0000-1000-8000-00805f9b34fb'),
-                                                            dbus.String(u'00001200-0000-1000-8000-00805f9b34fb')],
-                                                           signature=dbus.Signature('s'), variant_level=1),
-                                           dbus.String(u'Address'): dbus.String(u'00:11:67:D2:AB:EE', variant_level=1),
-                                           dbus.String(u'Services'): dbus.Array([], signature=dbus.Signature('o'), variant_level=1),
-                                           dbus.String(u'Blocked'): dbus.Boolean(False, variant_level=1),
-                                           dbus.String(u'Class'): dbus.UInt32(2360340L, variant_level=1),
-                                           dbus.String(u'Trusted'): dbus.Boolean(True, variant_level=1),
-                                           dbus.String(u'Icon'): dbus.String(u'audio-card', variant_level=1)},
+                                           dbus.Array([dbus.String(u'00001000-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                       dbus.String(u'00001001-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                       dbus.String(u'0000112d-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                       dbus.String(u'00001112-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                       dbus.String(u'0000111f-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                       dbus.String(u'0000111e-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                       dbus.String(u'0000110a-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                       dbus.String(u'0000110b-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                       dbus.String(u'0000110c-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                       dbus.String(u'0000110e-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                       dbus.String(u'00001103-0000-1000-8000-00805f9b34fb')],  # noqa
+                                                      signature=dbus.Signature('s'), variant_level=1)},  # noqa
+                                          signature=dbus.Signature('sv'))
+        elif (self.addr == 'org.bluez.Device'):
+            self._props = dbus.Dictionary({dbus.String(u'Product'): dbus.UInt16(5028, variant_level=1),  # noqa
+                                           dbus.String(u'Vendor'): dbus.UInt16(57, variant_level=1),  # noqa
+                                           dbus.String(u'Name'): dbus.String(u'BTS-06', variant_level=1),  # noqa
+                                           dbus.String(u'Paired'): dbus.Boolean(True, variant_level=1),  # noqa
+                                           dbus.String(u'Adapter'): dbus.ObjectPath('/org/bluez/985/hci0',  # noqa
+                                                                                    variant_level=1),  # noqa
+                                           dbus.String(u'Alias'): dbus.String(u'BTS-06', variant_level=1),  # noqa
+                                           dbus.String(u'Version'): dbus.UInt16(260, variant_level=1),  # noqa
+                                           dbus.String(u'Connected'): dbus.Boolean(False, variant_level=1),  # noqa
+                                           dbus.String(u'UUIDs'):
+                                                dbus.Array([dbus.String(u'00001108-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                            dbus.String(u'0000110b-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                            dbus.String(u'0000110c-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                            dbus.String(u'0000110e-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                            dbus.String(u'0000111e-0000-1000-8000-00805f9b34fb'),  # noqa
+                                                            dbus.String(u'00001200-0000-1000-8000-00805f9b34fb')],  # noqa
+                                                           signature=dbus.Signature('s'), variant_level=1),  # noqa
+                                           dbus.String(u'Address'): dbus.String(u'00:11:67:D2:AB:EE', variant_level=1),  # noqa
+                                           dbus.String(u'Services'): dbus.Array([], signature=dbus.Signature('o'), variant_level=1),  # noqa
+                                           dbus.String(u'Blocked'): dbus.Boolean(False, variant_level=1),  # noqa
+                                           dbus.String(u'Class'): dbus.UInt32(2360340L, variant_level=1),  # noqa
+                                           dbus.String(u'Trusted'): dbus.Boolean(True, variant_level=1),  # noqa
+                                           dbus.String(u'Icon'): dbus.String(u'audio-card', variant_level=1)},  # noqa
                                           signature=dbus.Signature('sv'))
 
     def StartDiscovery(self):
-        self._props[dbus.String(u'Discovering')] = dbus.Boolean(True, variant_level=1)
+        self._props[dbus.String(u'Discovering')] = \
+            dbus.Boolean(True, variant_level=1)
 
     def StopDiscovery(self):
-        self._props[dbus.String(u'Discovering')] = dbus.Boolean(False, variant_level=1)
+        self._props[dbus.String(u'Discovering')] = \
+            dbus.Boolean(False, variant_level=1)
 
     def FindAdapter(self, *args):
         return dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
@@ -87,10 +88,11 @@ class MockDBusInterface:
         return dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
 
     def ListDevices(self, *args):
-        return dbus.Array([dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')],
-                                        signature=dbus.Signature('o'))
+        return dbus.Array([dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')],  # noqa
+                          signature=dbus.Signature('o'))
 
-    def CreatePairedDevice(self, dev_id, path, caps, cb_notify_device, cb_notify_error):
+    def CreatePairedDevice(self, dev_id, path, caps,
+                           cb_notify_device, cb_notify_error):
         self._cb_notify_dev_id = dev_id
         self._cb_notify_device = cb_notify_device
         self._cb_notify_error = cb_notify_error
@@ -102,12 +104,13 @@ class MockDBusInterface:
         pass
 
     def _test_notify_device_created_ok(self):
-        self._cb_notify_device(dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE'))
+        self._cb_notify_device(dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE'))  # noqa
 
     def _test_notify_device_created_error(self):
         print "Callback notify device error"
-        self._cb_notify_error('Unable to create device: ' + self._cb_notify_dev_id)
- 
+        self._cb_notify_error('Unable to create device: ' +
+                              self._cb_notify_dev_id)
+
 
 class BTAdapterTest(unittest.TestCase):
 
@@ -144,7 +147,7 @@ class BTAdapterTest(unittest.TestCase):
     def test_get_adapter_by_dev_id(self):
         adapter = bt_manager.BTAdapter()
         adapter_by_dev_id = bt_manager.BTAdapter(adapter.Address)
-        self.assertEqual(adapter_by_dev_id.Address, adapter.Address) 
+        self.assertEqual(adapter_by_dev_id.Address, adapter.Address)
 
     def test_set_adapter_property(self):
         adapter = bt_manager.BTAdapter()
@@ -169,6 +172,7 @@ class BTAdapterTest(unittest.TestCase):
         address = '11:22:33:44:55:66'
         properties = 'Test Properties'
         is_called = False
+
         def callback_fn(*args):
             global address, properties, is_called
             is_called = True
@@ -177,12 +181,14 @@ class BTAdapterTest(unittest.TestCase):
             self.assertEqual(args[2], properties)
 
         adapter = bt_manager.BTAdapter()
-        adapter.add_signal_receiver(callback_fn, bt_manager.BTAdapter.SIGNAL_NAME_DEVICE_FOUND, self)
+        adapter.add_signal_receiver(callback_fn,
+                                    bt_manager.BTAdapter.SIGNAL_NAME_DEVICE_FOUND,  # noqa
+                                    self)
         self.mock_system_bus.add_signal_receiver.assert_called()
         cb = self.mock_system_bus.add_signal_receiver.call_args_list[0][0][0]
         cb(address, properties)
         self.assertTrue(is_called)
-        adapter.remove_signal_receiver(bt_manager.BTAdapter.SIGNAL_NAME_DEVICE_FOUND)
+        adapter.remove_signal_receiver(bt_manager.BTAdapter.SIGNAL_NAME_DEVICE_FOUND)  # noqa
         self.mock_system_bus.remove_signal_receiver.assert_called()
 
     def test_adapter_signal_property_changed(self):
@@ -190,6 +196,7 @@ class BTAdapterTest(unittest.TestCase):
         name = 'Property'
         value = 'New Value'
         is_called = False
+
         def callback_fn(*args):
             global name, value, is_called
             is_called = True
@@ -198,12 +205,14 @@ class BTAdapterTest(unittest.TestCase):
             self.assertEqual(args[2], value)
 
         adapter = bt_manager.BTAdapter()
-        adapter.add_signal_receiver(callback_fn, bt_manager.BTAdapter.SIGNAL_NAME_PROPERTY_CHANGED, self)
+        adapter.add_signal_receiver(callback_fn,
+                                    bt_manager.BTAdapter.SIGNAL_NAME_PROPERTY_CHANGED,  # noqa
+                                    self)
         self.mock_system_bus.add_signal_receiver.assert_called()
         cb = self.mock_system_bus.add_signal_receiver.call_args_list[0][0][0]
         cb(name, value)
         self.assertTrue(is_called)
-        adapter.remove_signal_receiver(bt_manager.BTAdapter.SIGNAL_NAME_PROPERTY_CHANGED)
+        adapter.remove_signal_receiver(bt_manager.BTAdapter.SIGNAL_NAME_PROPERTY_CHANGED)  # noqa
         self.mock_system_bus.remove_signal_receiver.assert_called()
 
     def test_adapter_signal_name_exception(self):
@@ -218,27 +227,31 @@ class BTAdapterTest(unittest.TestCase):
     def test_adapter_find_device(self):
         adapter = bt_manager.BTAdapter()
         dev = adapter.find_device('00:11:67:D2:AB:EE')
-        self.assertEqual(dev, dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE'))
+        self.assertEqual(dev,
+                         dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE'))  # noqa
 
     def test_adapter_create_device(self):
 
         global cb_notify_device_called, cb_notify_error_called
         cb_notify_device_called = False
+
         def cb_notify_device(*args):
             global cb_notify_device_called
             cb_notify_device_called = True
         cb_notify_error_called = False
+
         def cb_notify_error(*args):
             global cb_notify_error_called
             cb_notify_error_called = True
-
 
         adapter = bt_manager.BTAdapter()
         dev_id = '00:11:67:D2:AB:EE'
         path = dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
         caps = None
 
-        adapter.create_paired_device(dev_id, path, caps, cb_notify_device, cb_notify_error)
+        adapter.create_paired_device(dev_id, path,
+                                     caps, cb_notify_device,
+                                     cb_notify_error)
         adapter._interface._test_notify_device_created_ok()
         self.assertTrue(cb_notify_device_called)
         adapter._interface._test_notify_device_created_error()
@@ -254,7 +267,7 @@ class BTAdapterTest(unittest.TestCase):
 
 
 class BTDeviceTest(unittest.TestCase):
-   
+
     def setUp(self):
         patcher = mock.patch('dbus.Interface', MockDBusInterface)
         patcher.start()
@@ -290,7 +303,8 @@ class BTDeviceTest(unittest.TestCase):
             uuid = bt_manager.BTUUID(i)
             print bt_manager.SERVICES.get(uuid.uuid16, 'Unknown')
         print '========================================================='
-        device = bt_manager.BTDevice(adapter_id=adapter_id, dev_object_path=dev_path)
+        device = bt_manager.BTDevice(adapter_id=adapter_id,
+                                     dev_object_path=dev_path)
         print device
         print '========================================================='
         device = bt_manager.BTDevice(dev_id='00:11:67:D2:AB:EE')
@@ -308,7 +322,7 @@ class BTDeviceTest(unittest.TestCase):
 
 
 class BTAgentTest(unittest.TestCase):
-    
+
     @mock.patch('dbus.SystemBus')
     def test_agent_with_defaults(self, patched_system_bus):
         mock_system_bus = mock.MagicMock()
@@ -316,14 +330,15 @@ class BTAgentTest(unittest.TestCase):
         mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
         adapter = mock.MagicMock()
         agent = bt_manager.BTAgent(adapter)
-        adapter.register_agent.assert_called_with('/test/agent', 'DisplayYesNo')
+        adapter.register_agent.assert_called_with('/test/agent',
+                                                  'DisplayYesNo')
 
         obj = dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
         uuid = dbus.String(u'00001108-0000-1000-8000-00805f9b34fb')
         pin_code = dbus.String('0000')
         pass_key = dbus.UInt32(0x12345678L)
         mode = 'Mode'
-        
+
         self.assertEqual(agent.Release(), None)
         self.assertEqual(agent.Authorize(obj, uuid), None)
         self.assertEqual(agent.RequestPinCode(obj), pin_code)
@@ -341,15 +356,16 @@ class BTAgentTest(unittest.TestCase):
         adapter = mock.MagicMock()
         user = mock.MagicMock()
         agent = bt_manager.BTAgent(adapter,
-                                   cb_notify_on_release = user.cb_notify_on_release,
-                                   cb_notify_on_authorize = user.cb_notify_on_authorize,
-                                   cb_notify_on_request_pin_code = user.cb_notify_on_request_pin_code,
-                                   cb_notify_on_request_pass_key = user.cb_notify_on_request_pass_key,
-                                   cb_notify_on_display_pass_key = user.cb_notify_on_display_pass_key,
-                                   cb_notify_on_request_confirmation = user.cb_notify_on_request_confirmation,
-                                   cb_notify_on_confirm_mode_change = user.cb_notify_on_confirm_mode_change,
-                                   cb_notify_on_cancel = user.cb_notify_on_cancel)
-        adapter.register_agent.assert_once_called_with('/test/agent', 'DisplayYesNo')
+                                   cb_notify_on_release=user.cb_notify_on_release,  # noqa
+                                   cb_notify_on_authorize=user.cb_notify_on_authorize,  # noqa
+                                   cb_notify_on_request_pin_code=user.cb_notify_on_request_pin_code,  # noqa
+                                   cb_notify_on_request_pass_key=user.cb_notify_on_request_pass_key,  # noqa
+                                   cb_notify_on_display_pass_key=user.cb_notify_on_display_pass_key,  # noqa
+                                   cb_notify_on_request_confirmation=user.cb_notify_on_request_confirmation,  # noqa
+                                   cb_notify_on_confirm_mode_change=user.cb_notify_on_confirm_mode_change,  # noqa
+                                   cb_notify_on_cancel=user.cb_notify_on_cancel)  # noqa
+        adapter.register_agent.assert_once_called_with('/test/agent',
+                                                       'DisplayYesNo')
 
         obj = dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
         uuid = dbus.String(u'00001108-0000-1000-8000-00805f9b34fb')
@@ -359,11 +375,11 @@ class BTAgentTest(unittest.TestCase):
 
         self.assertEqual(agent.Release(), None)
         user.cb_notify_on_release.assert_once_called_with()
-        
+
         user.cb_notify_on_authorize.return_value = True
         self.assertEqual(agent.Authorize(obj, uuid), None)
         user.cb_notify_on_authorize.assert_called_once_with(obj, uuid)
-        
+
         user.reset_mock()
         user.cb_notify_on_authorize.return_value = False
         try:
@@ -403,11 +419,11 @@ class BTAgentTest(unittest.TestCase):
         self.assertTrue(exception_raised)
 
         self.assertEqual(agent.DisplayPasskey(obj, pass_key), None)
-        user.cb_notify_on_display_pass_key.assert_called_once_with(obj, pass_key)
+        user.cb_notify_on_display_pass_key.assert_called_once_with(obj, pass_key)  # noqa
 
         user.cb_notify_on_request_confirmation.return_value = True
         self.assertEqual(agent.RequestConfirmation(obj, pass_key), None)
-        user.cb_notify_on_request_confirmation.assert_called_once_with(obj, pass_key)
+        user.cb_notify_on_request_confirmation.assert_called_once_with(obj, pass_key)  # noqa
 
         user.reset_mock()
         user.cb_notify_on_request_confirmation.return_value = False
@@ -416,7 +432,7 @@ class BTAgentTest(unittest.TestCase):
             agent.RequestConfirmation(obj, pass_key)
         except bt_manager.RejectedException:
             exception_raised = True
-        user.cb_notify_on_request_confirmation.assert_called_once_with(obj, pass_key)
+        user.cb_notify_on_request_confirmation.assert_called_once_with(obj, pass_key)  # noqa
         self.assertTrue(exception_raised)
 
         user.cb_notify_on_confirm_mode_change.return_value = True
