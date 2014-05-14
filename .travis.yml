@@ -4,7 +4,7 @@ python:
   - "2.7_with_system_site_packages"
 
 install:
-  - "sudo apt-get python-dbus"
+  - "sudo apt-get install python-dbus"
   - "sudo pip install coveralls flake8"
 
 script:
