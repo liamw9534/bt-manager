@@ -10,12 +10,12 @@ BT-Manager
     :target: https://pypi.python.org/pypi/BT-Manager/
     :alt: Number of PyPI downloads
 
-.. image:: https://travis-ci.org/liamw9534/BT-Manager.png?branch=master
-    :target: https://travis-ci.org/liamw9534/BT-Manager
+.. image:: https://travis-ci.org/liamw9534/bt-manager.png?branch=master
+    :target: https://travis-ci.org/liamw9534/bt-manager
     :alt: Travis CI build status
 
-.. image:: https://coveralls.io/repos/liamw9534/BT-Manager/badge.png?branch=master
-   :target: https://coveralls.io/r/liamw9534/BT-Manager?branch=master
+.. image:: https://coveralls.io/repos/liamw9534/bt-manager/badge.png?branch=master
+   :target: https://coveralls.io/r/liamw9534/bt-manager?branch=master
    :alt: Test coverage
 
 A library for managing bluetooth devices using Python, Bluez and DBus.
