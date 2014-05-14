@@ -8,7 +8,7 @@ install:
   - "sudo pip install coveralls flake8"
 
 script:
-  - "flake8 $(find . -iname "*.py")"
+  - "flake8 $(find . -iname '*.py')"
   - "nosetests --with-coverage --cover-package=bt-manager"
 
 after_success:
