@@ -138,7 +138,7 @@ class MockDBusInterface:
 
 
 class BTDbusTypeTranslation(unittest.TestCase):
-    
+
     def test_all(self):
         self.assertTrue(isinstance(bt_manager.translate_to_dbus_type([]),
                                    dbus.Array))

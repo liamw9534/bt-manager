@@ -86,7 +86,7 @@ class BTInterface:
             if (s):
                 self._bus.remove_signal_receiver(s.signal_handler,
                                                  signal,
-                                                 dbus_interface=self._dbus_addr)
+                                                 dbus_interface=self._dbus_addr)  # noqa
                 self._signals.pop(signal)
         else:
             raise BTSignalNameNotRecognisedException
@@ -136,7 +136,7 @@ class BTManager(BTInterface):
     SIGNAL_ADAPTER_ADDED = 'AdapterAdded'
     SIGNAL_ADAPTER_REMOVED = 'AdapterRemoved'
     SIGNAL_DEFAULT_ADAPTER_CHANGED = 'DefaultAdapterChanged'
-    
+
     def __init__(self):
         BTInterface.__init__(self, '/', 'org.bluez.Manager')
         self._register_signal_name(BTManager.SIGNAL_ADAPTER_ADDED)
@@ -235,11 +235,12 @@ class BTGenericDevice(BTInterface):
 
 class BTDevice(BTGenericDevice):
     """Wrapper around Dbus to encapsulate the BT device entity"""
-    
+
     SIGNAL_DISCONNECT_REQUESTED = 'DisconnectRequested'
 
     def __init__(self, *args, **kwargs):
-        BTGenericDevice.__init__(self, addr='org.bluez.Device', *args, **kwargs)
+        BTGenericDevice.__init__(self, addr='org.bluez.Device',
+                                 *args, **kwargs)
         self._register_signal_name(BTDevice.SIGNAL_DISCONNECT_REQUESTED)
 
     def disconnect(self):
@@ -248,14 +249,15 @@ class BTDevice(BTGenericDevice):
 
 class BTAudioSink(BTGenericDevice):
     """Wrapper around Dbus to encapsulate the BT audio sink entity"""
-    
+
     SIGNAL_CONNECTED = 'Connected'
     SIGNAL_DISCONNECTED = 'Disconnected'
     SIGNAL_PLAYING = 'Playing'
     SIGNAL_STOPPED = 'Stopped'
 
     def __init__(self, *args, **kwargs):
-        BTGenericDevice.__init__(self, addr='org.bluez.AudioSink', *args, **kwargs)
+        BTGenericDevice.__init__(self, addr='org.bluez.AudioSink',
+                                 *args, **kwargs)
         self._register_signal_name(BTAudioSink.SIGNAL_CONNECTED)
         self._register_signal_name(BTAudioSink.SIGNAL_DISCONNECTED)
         self._register_signal_name(BTAudioSink.SIGNAL_PLAYING)
@@ -273,12 +275,13 @@ class BTAudioSink(BTGenericDevice):
 
 class BTControl(BTGenericDevice):
     """Wrapper around Dbus to encapsulate the BT control entity"""
-    
+
     SIGNAL_CONNECTED = 'Connected'
     SIGNAL_DISCONNECTED = 'Disconnected'
 
     def __init__(self, *args, **kwargs):
-        BTGenericDevice.__init__(self, addr='org.bluez.Control', *args, **kwargs)
+        BTGenericDevice.__init__(self, addr='org.bluez.Control',
+                                 *args, **kwargs)
         self._register_signal_name(BTControl.SIGNAL_CONNECTED)
         self._register_signal_name(BTControl.SIGNAL_DISCONNECTED)
 
@@ -376,14 +379,14 @@ class BTAgent(dbus.service.Object):
         if (self.cb_notify_on_request_confirmation):
             if (not self.cb_notify_on_request_confirmation(device, pass_key)):
                 raise \
-                    BTRejectedException('User confirmation of pass key negative')
+                    BTRejectedException('User confirmation of pass key negative')  # noqa
 
     @dbus.service.method("org.bluez.Agent", in_signature="s", out_signature="")
     def ConfirmModeChange(self, mode):
         if (self.cb_notify_on_confirm_mode_change):
             if (not self.cb_notify_on_confirm_mode_change(mode)):
                 raise \
-                    BTRejectedException('User mode change confirmation negative')
+                    BTRejectedException('User mode change confirmation negative')  # noqa
 
     @dbus.service.method("org.bluez.Agent", in_signature="", out_signature="")
     def Cancel(self):
