@@ -1,16 +1,15 @@
 from __future__ import unicode_literals
-from collections import namedtuple
 
 import dbus
 import dbus.service
 import types
 
 
-def _translate_to_dbus_type(value):
+def translate_to_dbus_type(value):
     """Helper function to map values from their native Python types
     to Dbus types"""
     if (isinstance(value, list)):
-        return dbus.Array([_translate_to_dbus_type(k) for k in value])
+        return dbus.Array([translate_to_dbus_type(k) for k in value])
     elif (isinstance(value, int) and value < 0):
         return dbus.Int32(value)
     elif (isinstance(value, int) and value >= 0):
@@ -25,92 +24,158 @@ def _translate_to_dbus_type(value):
         return value
 
 
+class BTRejectedException(dbus.DBusException):
+    _dbus_error_name = "org.bluez.Error.Rejected"
+
+
 class BTSignalNameNotRecognisedException:
     """Exception raised for when a signal name is not recognized.
     Check the originating class for a list of supported signal names"""
     pass
 
 
+class BTDeviceNotSpecifiedException:
+    """Exception raised for when a device is not specified"""
+    pass
+
+
+class Signal():
+    def __init__(self, signal, user_callback, user_arg):
+        self.signal = signal
+        self.user_callback = user_callback
+        self.user_arg = user_arg
+
+    def signal_handler(self, *args):
+        self.user_callback(self.signal, self.user_arg, *args)
+
+
 class BTInterface:
     """Wrapper around DBus to encapsulated a BT interface
     entry point e.g., an adapter, a device, etc"""
+
+    SIGNAL_PROPERTY_CHANGED = 'PropertyChanged'
+
     def __init__(self, path, addr):
+        self._dbus_addr = addr
+        self._signals = {}
+        self._signal_names = []
         self._bus = dbus.SystemBus()
         self._object = self._bus.get_object('org.bluez', path)
         self._interface = dbus.Interface(self._object, addr)
+        self._properties = self._interface.GetProperties().keys()
+        self._register_signal_name(BTInterface.SIGNAL_PROPERTY_CHANGED)
+
+    def _register_signal_name(self, name):
+        self._signal_names.append(name)
+
+    def add_signal_receiver(self, callback_fn, signal, user_arg):
+        """Add a signal receiver callback with user argument"""
+        if (signal in self._signal_names):
+            s = Signal(signal, callback_fn, user_arg)
+            self._signals[signal] = s
+            self._bus.add_signal_receiver(s.signal_handler,
+                                          signal,
+                                          dbus_interface=self._dbus_addr)
+        else:
+            raise BTSignalNameNotRecognisedException
+
+    def remove_signal_receiver(self, signal):
+        """Remove an installed signal receiver by signal name"""
+        if (signal in self._signal_names):
+            s = self._signals.get(signal)
+            if (s):
+                self._bus.remove_signal_receiver(s.signal_handler,
+                                                 signal,
+                                                 dbus_interface=self._dbus_addr)
+                self._signals.pop(signal)
+        else:
+            raise BTSignalNameNotRecognisedException
+
+    def get_property(self, name):
+        """Helper to get a property value by name"""
+        return self._interface.GetProperties()[name]
+
+    def set_property(self, name, value):
+        """Helper to set a property value by name, translating to correct
+        DBus type"""
+        self._interface.SetProperty(name, translate_to_dbus_type(value))
+
+    def __getattr__(self, name):
+        """Override default getattr behaviours to allow DBus object
+        properties to be exposed in the class for getting"""
+        if name in self.__dict__:
+            return self.__dict__[name]
+        elif '_properties' in self.__dict__ and name in self._properties:
+            return self.get_property(name)
+
+    def __setattr__(self, name, value):
+        """Override default setattr behaviours to allow DBus object
+        properties to be exposed in the class for setting"""
+        if '_properties' in self.__dict__ and name not in self.__dict__:
+            self.set_property(name, value)
+        else:
+            self.__dict__[name] = value
+
+    def __repr__(self):
+        """Stringify the Dbus interface properties as raw"""
+        h = self._interface.GetProperties()
+        return str(h)
+
+    def __str__(self):
+        """Stringify the Dbus interface properties in a nice format"""
+        h = self._interface.GetProperties()
+        s = ''
+        for i in h.keys():
+            s += i + ': ' + str(h[i]) + '\n'
+        return s
 
 
 class BTManager(BTInterface):
     """Wrapper around Dbus to encapsulate the BT manager entity"""
+
+    SIGNAL_ADAPTER_ADDED = 'AdapterAdded'
+    SIGNAL_ADAPTER_REMOVED = 'AdapterRemoved'
+    SIGNAL_DEFAULT_ADAPTER_CHANGED = 'DefaultAdapterChanged'
+    
     def __init__(self):
         BTInterface.__init__(self, '/', 'org.bluez.Manager')
+        self._register_signal_name(BTManager.SIGNAL_ADAPTER_ADDED)
+        self._register_signal_name(BTManager.SIGNAL_ADAPTER_REMOVED)
+        self._register_signal_name(BTManager.SIGNAL_DEFAULT_ADAPTER_CHANGED)
 
     def default_adapter(self):
-        """Obtain the default BT adapter object"""
+        """Obtain the default BT adapter object path"""
         return self._interface.DefaultAdapter()
 
     def find_adapter(self, dev_id):
         """Find a BT adapter by its MAC address e.g., 11:22:33:44:55:66"""
         return self._interface.FindAdapter(dev_id)
 
+    def list_adapters(self):
+        """List all attached BT adapters"""
+        return self._interface.ListAdapters()
+
 
 class BTAdapter(BTInterface):
     """Wrapper around Dbus to encapsulate the BT adapter entity"""
 
-    SIGNAL_NAME_DEVICE_FOUND = 'DeviceFound'
-    SIGNAL_NAME_PROPERTY_CHANGED = 'PropertyChanged'
+    SIGNAL_DEVICE_FOUND = 'DeviceFound'
+    SIGNAL_DEVICE_REMOVED = 'DeviceRemoved'
+    SIGNAL_DEVICE_CREATED = 'DeviceCreated'
+    SIGNAL_DEVICE_DISAPPEARED = 'DeviceDisappeared'
 
-    def __init__(self, dev_id=None):
+    def __init__(self, adapter_id=None):
         manager = BTManager()
-        if (dev_id is None):
+        if (adapter_id is None):
             adapter_path = manager.default_adapter()
         else:
-            adapter_path = manager.find_adapter(dev_id)
-        self._cb_user = {}
-        self._cb_internal = {BTAdapter.SIGNAL_NAME_DEVICE_FOUND:
-                             self._device_found_signal_handler,
-                             BTAdapter.SIGNAL_NAME_PROPERTY_CHANGED:
-                             self._property_changed_signal_handler}
+            adapter_path = manager.find_adapter(adapter_id)
         BTInterface.__init__(self, adapter_path, 'org.bluez.Adapter')
-        self._properties = self._interface.GetProperties().keys()
-
-    def _device_found_signal_handler(self, address, properties):
-        """Wrapper for DeviceFound signal"""
-        signal_name = BTAdapter.SIGNAL_NAME_DEVICE_FOUND
-        user_cb = self._cb_user.get(signal_name)
-        if (user_cb):
-            user_cb.callback_fn(user_cb.user_arg, address, properties)
-
-    def _property_changed_signal_handler(self, name, value):
-        """Wrapper for PropertyChanged signal"""
-        signal_name = BTAdapter.SIGNAL_NAME_PROPERTY_CHANGED
-        user_cb = self._cb_user.get(signal_name)
-        if (user_cb):
-            user_cb.callback_fn(user_cb.user_arg, name, value)
-
-    def add_signal_receiver(self, callback_fn, signal_name, user_arg):
-        """Add a signal receiver callback with user argument.  The
-        params for each signal are dependent on the signal name"""
-        cb = self._cb_internal.get(signal_name)
-        if (cb):
-            UserCallback = namedtuple('UserCallback', 'callback_fn user_arg')
-            self._cb_user[signal_name] = UserCallback(callback_fn, user_arg)
-            self._bus.add_signal_receiver(cb,
-                                          signal_name,
-                                          dbus_interface="org.bluez.Adapter")
-        else:
-            raise BTSignalNameNotRecognisedException
-
-    def remove_signal_receiver(self, signal_name):
-        """Remove an installed signal receiver by signal name"""
-        cb = self._cb_internal.get(signal_name)
-        if (cb):
-            self._bus.remove_signal_receiver(cb,
-                                             signal_name,
-                                             dbus_interface="org.bluez.Adapter")   # noqa
-            self._cb_user.pop(signal_name)
-        else:
-            raise BTSignalNameNotRecognisedException
+        self._register_signal_name(BTAdapter.SIGNAL_DEVICE_FOUND)
+        self._register_signal_name(BTAdapter.SIGNAL_DEVICE_REMOVED)
+        self._register_signal_name(BTAdapter.SIGNAL_DEVICE_CREATED)
+        self._register_signal_name(BTAdapter.SIGNAL_DEVICE_DISAPPEARED)
+        self._register_signal_name(BTAdapter.SIGNAL_PROPERTY_CHANGED)
 
     def start_discovery(self):
         """Start device discovery which will signal
@@ -137,119 +202,99 @@ class BTAdapter(BTInterface):
                                                   caps, cb_notify_device,
                                                   cb_notify_error)
 
-    def remove_device(self, dev_id):
-        """Remove an existing paired device entry
-        on this adapter by device MAC addr"""
-        dev_obj = self.find_device(dev_id)
-        if (dev_obj):
-            self._interface.RemoveDevice(dev_obj)
+    def remove_device(self, dev_path):
+        """Remove an existing paired device entry on this adapter
+        by device path"""
+        self._interface.RemoveDevice(dev_path)
 
     def register_agent(self, path, caps):
         """Register a pairing agent on this adapter"""
         self._interface.RegisterAgent(path, caps)
 
-    def _get_property(self, name):
-        """Helper to get a property value by name"""
-        return self._interface.GetProperties()[name]
+    def unregister_agent(self, path):
+        """Unregister a pairing agent on this adapter"""
+        self._interface.UnregisterAgent(path)
 
-    def _set_property(self, name, value):
-        """Helper to set a property value by name, translating to correct
-        DBus type"""
-        self._interface.SetProperty(name, _translate_to_dbus_type(value))
 
-    def __getattr__(self, name):
-        """Override default getattr behaviours to allow DBus object
-        properties to be exposed in the class for getting"""
-        if name in self.__dict__:
-            return self.__dict__[name]
-        elif '_properties' in self.__dict__ and name in self._properties:
-            return self._get_property(name)
-
-    def __setattr__(self, name, value):
-        """Override default setattr behaviours to allow DBus object
-        properties to be exposed in the class for setting"""
-        if '_properties' in self.__dict__ and name not in self.__dict__:
-            self._set_property(name, value)
+class BTGenericDevice(BTInterface):
+    """Generic BT device which has its own interface bus address but is
+    associated with a BT adapter"""
+    def __init__(self, addr, adapter_id=None, dev_path=None, dev_id=None):
+        if (dev_path):
+            path = dev_path
+        elif (dev_id):
+            if (adapter_id):
+                adapter = BTAdapter(adapter_id)
+            else:
+                adapter = BTAdapter()
+            path = adapter.find_device(dev_id)
         else:
-            self.__dict__[name] = value
-
-    def __repr__(self):
-        """Stringify the Dbus interface properties as raw"""
-        h = self._interface.GetProperties()
-        return str(h)
-
-    def __str__(self):
-        """Stringify the Dbus interface properties in a nice format"""
-        h = self._interface.GetProperties()
-        s = ''
-        for i in h.keys():
-            s += i + ': ' + str(h[i]) + '\n'
-        return s
+            raise BTDeviceNotSpecifiedException
+        BTInterface.__init__(self, path, addr)
 
 
-class BTDevice(BTInterface):
+class BTDevice(BTGenericDevice):
     """Wrapper around Dbus to encapsulate the BT device entity"""
-    def __init__(self, adapter_id=None, dev_object_path=None, dev_id=None):
-        if (adapter_id):
-            adapter = BTAdapter(adapter_id)
-        else:
-            adapter = BTAdapter()
+    
+    SIGNAL_DISCONNECT_REQUESTED = 'DisconnectRequested'
 
-        if (dev_object_path is None):
-            device_path = adapter.find_device(dev_id)
-        else:
-            device_path = dev_object_path
-        BTInterface.__init__(self, device_path, 'org.bluez.Device')
-        self._properties = self._interface.GetProperties().keys()
+    def __init__(self, *args, **kwargs):
+        BTGenericDevice.__init__(self, addr='org.bluez.Device', *args, **kwargs)
+        self._register_signal_name(BTDevice.SIGNAL_DISCONNECT_REQUESTED)
 
-    def _get_property(self, name):
-        """Helper to get a property value by name"""
-        return self._interface.GetProperties()[name]
-
-    def _set_property(self, name, value):
-        """Helper to set a property value by name, translating to correct
-        DBus type"""
-        self._interface.SetProperty(name, _translate_to_dbus_type(value))
-
-    def __getattr__(self, name):
-        """Override default getattr behaviours to allow DBus object
-        properties to be exposed in the class for getting"""
-        if name in self.__dict__:
-            return self.__dict__[name]
-        elif '_properties' in self.__dict__ and name in self._properties:
-            return self._get_property(name)
-
-    def __setattr__(self, name, value):
-        """Override default setattr behaviours to allow DBus object
-        properties to be exposed in the class for setting"""
-        if '_properties' in self.__dict__ and name not in self.__dict__:
-            self._set_property(name, value)
-        else:
-            self.__dict__[name] = value
-
-    def __repr__(self):
-        """Stringify the Dbus interface properties as raw"""
-        h = self._interface.GetProperties()
-        return str(h)
-
-    def __str__(self):
-        """Stringify the Dbus interface properties in a nice format"""
-        h = self._interface.GetProperties()
-        s = ''
-        for i in h.keys():
-            s += i + ': ' + str(h[i]) + '\n'
-        return s
+    def disconnect(self):
+        self._interface.Disconnect()
 
 
-class RejectedException(dbus.DBusException):
-    _dbus_error_name = "org.bluez.Error.Rejected"
+class BTAudioSink(BTGenericDevice):
+    """Wrapper around Dbus to encapsulate the BT audio sink entity"""
+    
+    SIGNAL_CONNECTED = 'Connected'
+    SIGNAL_DISCONNECTED = 'Disconnected'
+    SIGNAL_PLAYING = 'Playing'
+    SIGNAL_STOPPED = 'Stopped'
+
+    def __init__(self, *args, **kwargs):
+        BTGenericDevice.__init__(self, addr='org.bluez.AudioSink', *args, **kwargs)
+        self._register_signal_name(BTAudioSink.SIGNAL_CONNECTED)
+        self._register_signal_name(BTAudioSink.SIGNAL_DISCONNECTED)
+        self._register_signal_name(BTAudioSink.SIGNAL_PLAYING)
+        self._register_signal_name(BTAudioSink.SIGNAL_STOPPED)
+
+    def connect(self):
+        self._interface.Connect()
+
+    def is_connected(self):
+        return self._interface.IsConnected()
+
+    def disconnect(self):
+        self._interface.Disconnect()
+
+
+class BTControl(BTGenericDevice):
+    """Wrapper around Dbus to encapsulate the BT control entity"""
+    
+    SIGNAL_CONNECTED = 'Connected'
+    SIGNAL_DISCONNECTED = 'Disconnected'
+
+    def __init__(self, *args, **kwargs):
+        BTGenericDevice.__init__(self, addr='org.bluez.Control', *args, **kwargs)
+        self._register_signal_name(BTControl.SIGNAL_CONNECTED)
+        self._register_signal_name(BTControl.SIGNAL_DISCONNECTED)
+
+    def is_connected(self):
+        return self._interface.IsConnected()
+
+    def volume_up(self):
+        self._interface.VolumeUp()
+
+    def volume_down(self):
+        self._interface.VolumeDown()
 
 
 class BTAgent(dbus.service.Object):
     """Simple BT device pairing agent"""
     def __init__(self,
-                 adapter,
-                 capability='DisplayYesNo',
                  path='/test/agent',
                  auto_authorize_connections=True,
                  default_pin_code='0000',
@@ -278,7 +323,6 @@ class BTAgent(dbus.service.Object):
         self.cb_notify_on_cancel = cb_notify_on_cancel
         bus = dbus.SystemBus()
         super(BTAgent, self).__init__(bus, path)
-        adapter.register_agent(path, capability)
 
     @dbus.service.method("org.bluez.Agent", in_signature="", out_signature="")
     def Release(self):
@@ -290,9 +334,9 @@ class BTAgent(dbus.service.Object):
     def Authorize(self, device, uuid):
         if (self.cb_notify_on_authorize):
             if (not self.cb_notify_on_authorize(device, uuid)):
-                raise RejectedException('Connection not authorized by user')
+                raise BTRejectedException('Connection not authorized by user')
         elif (not self.auto_authorize_connections):
-            raise RejectedException('Auto authorize is off')
+            raise BTRejectedException('Auto authorize is off')
 
     @dbus.service.method("org.bluez.Agent", in_signature="o",
                          out_signature="s")
@@ -300,9 +344,9 @@ class BTAgent(dbus.service.Object):
         if (self.cb_notify_on_request_pin_code):
             pin_code = self.cb_notify_on_request_pin_code(device)
             if (pin_code is None):
-                raise RejectedException('User did not provide PIN code')
+                raise BTRejectedException('User did not provide PIN code')
         elif (self.default_pin_code is None):
-            raise RejectedException('No default PIN code set')
+            raise BTRejectedException('No default PIN code set')
         else:
             pin_code = self.default_pin_code
         return dbus.String(pin_code)
@@ -313,9 +357,9 @@ class BTAgent(dbus.service.Object):
         if (self.cb_notify_on_request_pass_key):
             pass_key = self.cb_notify_on_request_pass_key(device)
             if (pass_key is None):
-                raise RejectedException('User did not provide pass key')
+                raise BTRejectedException('User did not provide pass key')
         elif (self.default_pass_key is None):
-            raise RejectedException('No default pass key set')
+            raise BTRejectedException('No default pass key set')
         else:
             pass_key = self.default_pass_key
         return dbus.UInt32(pass_key)
@@ -332,14 +376,14 @@ class BTAgent(dbus.service.Object):
         if (self.cb_notify_on_request_confirmation):
             if (not self.cb_notify_on_request_confirmation(device, pass_key)):
                 raise \
-                    RejectedException('User confirmation of pass key negative')
+                    BTRejectedException('User confirmation of pass key negative')
 
     @dbus.service.method("org.bluez.Agent", in_signature="s", out_signature="")
     def ConfirmModeChange(self, mode):
         if (self.cb_notify_on_confirm_mode_change):
             if (not self.cb_notify_on_confirm_mode_change(mode)):
                 raise \
-                    RejectedException('User mode change confirmation negative')
+                    BTRejectedException('User mode change confirmation negative')
 
     @dbus.service.method("org.bluez.Agent", in_signature="", out_signature="")
     def Cancel(self):

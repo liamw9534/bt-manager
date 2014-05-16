@@ -63,6 +63,12 @@ class MockDBusInterface:
                                            dbus.String(u'Trusted'): dbus.Boolean(True, variant_level=1),  # noqa
                                            dbus.String(u'Icon'): dbus.String(u'audio-card', variant_level=1)},  # noqa
                                           signature=dbus.Signature('sv'))
+        elif (self.addr == 'org.bluez.Manager'):
+            self._props = {u'Adapters': ['/org/bluez/985/hci0']}
+        elif (self.addr == 'org.bluez.AudioSink'):
+            self._props = {u'Connected': False}
+        elif (self.addr == 'org.bluez.Control'):
+            self._props = {u'Connected': False}
 
     def StartDiscovery(self):
         self._props[dbus.String(u'Discovering')] = \
@@ -72,11 +78,14 @@ class MockDBusInterface:
         self._props[dbus.String(u'Discovering')] = \
             dbus.Boolean(False, variant_level=1)
 
+    def ListAdapters(self):
+        return ['/org/bluez/985/hci0']
+
     def FindAdapter(self, *args):
-        return dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
+        return '/org/bluez/985/hci0'
 
     def DefaultAdapter(self, *args):
-        return dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
+        return '/org/bluez/985/hci0'
 
     def SetProperty(self, name, value):
         self._props[name] = value
@@ -85,11 +94,10 @@ class MockDBusInterface:
         return self._props
 
     def FindDevice(self, *args):
-        return dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
+        return '/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE'
 
     def ListDevices(self, *args):
-        return dbus.Array([dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')],  # noqa
-                          signature=dbus.Signature('o'))
+        return ['/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE']
 
     def CreatePairedDevice(self, dev_id, path, caps,
                            cb_notify_device, cb_notify_error):
@@ -103,13 +111,71 @@ class MockDBusInterface:
     def RegisterAgent(self, path, caps):
         pass
 
+    def UnregisterAgent(self, path):
+        pass
+
+    def Connect(self):
+        self._props['Connected'] = True
+
+    def IsConnected(self):
+        return self._props['Connected']
+
+    def Disconnect(self):
+        self._props['Connected'] = False
+
+    def VolumeUp(self):
+        pass
+
+    def VolumeDown(self):
+        pass
+
     def _test_notify_device_created_ok(self):
-        self._cb_notify_device(dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE'))  # noqa
+        self._cb_notify_device('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')  # noqa
 
     def _test_notify_device_created_error(self):
-        print "Callback notify device error"
         self._cb_notify_error('Unable to create device: ' +
                               self._cb_notify_dev_id)
+
+
+class BTDbusTypeTranslation(unittest.TestCase):
+    
+    def test_all(self):
+        self.assertTrue(isinstance(bt_manager.translate_to_dbus_type([]),
+                                   dbus.Array))
+        self.assertTrue(isinstance(bt_manager.translate_to_dbus_type(-1),
+                                   dbus.Int32))
+        self.assertTrue(isinstance(bt_manager.translate_to_dbus_type(1),
+                                   dbus.UInt32))
+        self.assertTrue(isinstance(bt_manager.translate_to_dbus_type(u'Test'),
+                                   dbus.String))
+        self.assertTrue(isinstance(bt_manager.translate_to_dbus_type('Test'),
+                                   dbus.String))
+        self.assertTrue(isinstance(bt_manager.translate_to_dbus_type({}),
+                                   dict))
+
+
+class BTManagerTest(unittest.TestCase):
+
+    def setUp(self):
+        patcher = mock.patch('dbus.Interface', MockDBusInterface)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        patcher = mock.patch('dbus.SystemBus')
+        patched_system_bus = patcher.start()
+        self.addCleanup(patcher.stop)
+        mock_system_bus = mock.MagicMock()
+        patched_system_bus.return_value = mock_system_bus
+        mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
+        self.mock_system_bus = mock_system_bus
+
+    def test_manager_adapters(self):
+        manager = bt_manager.BTManager()
+        print repr(manager)
+        print '========================================================='
+        print manager
+        print '========================================================='
+        print 'Adapters:', manager.list_adapters()
+        print 'Default:', manager.default_adapter()
 
 
 class BTAdapterTest(unittest.TestCase):
@@ -168,51 +234,33 @@ class BTAdapterTest(unittest.TestCase):
         self.assertFalse(adapter.Discovering)
 
     def test_adapter_signal_device_found(self):
-        global address, properties, is_called
-        address = '11:22:33:44:55:66'
+        name = '11:22:33:44:55:66'
         properties = 'Test Properties'
-        is_called = False
+        signal = bt_manager.BTAdapter.SIGNAL_DEVICE_FOUND
 
-        def callback_fn(*args):
-            global address, properties, is_called
-            is_called = True
-            self = args[0]
-            self.assertEqual(args[1], address)
-            self.assertEqual(args[2], properties)
-
+        user = mock.MagicMock()
         adapter = bt_manager.BTAdapter()
-        adapter.add_signal_receiver(callback_fn,
-                                    bt_manager.BTAdapter.SIGNAL_NAME_DEVICE_FOUND,  # noqa
-                                    self)
+        adapter.add_signal_receiver(user.callback_fn, signal, self)
         self.mock_system_bus.add_signal_receiver.assert_called()
         cb = self.mock_system_bus.add_signal_receiver.call_args_list[0][0][0]
-        cb(address, properties)
-        self.assertTrue(is_called)
-        adapter.remove_signal_receiver(bt_manager.BTAdapter.SIGNAL_NAME_DEVICE_FOUND)  # noqa
+        cb(name, properties)
+        user.callback_fn.assert_called_with(signal, self, name, properties)
+        adapter.remove_signal_receiver(signal)
         self.mock_system_bus.remove_signal_receiver.assert_called()
 
     def test_adapter_signal_property_changed(self):
-        global name, value, is_called
         name = 'Property'
         value = 'New Value'
-        is_called = False
+        signal = bt_manager.BTAdapter.SIGNAL_PROPERTY_CHANGED
 
-        def callback_fn(*args):
-            global name, value, is_called
-            is_called = True
-            self = args[0]
-            self.assertEqual(args[1], name)
-            self.assertEqual(args[2], value)
-
+        user = mock.MagicMock()
         adapter = bt_manager.BTAdapter()
-        adapter.add_signal_receiver(callback_fn,
-                                    bt_manager.BTAdapter.SIGNAL_NAME_PROPERTY_CHANGED,  # noqa
-                                    self)
+        adapter.add_signal_receiver(user.callback_fn, signal, self)
         self.mock_system_bus.add_signal_receiver.assert_called()
         cb = self.mock_system_bus.add_signal_receiver.call_args_list[0][0][0]
         cb(name, value)
-        self.assertTrue(is_called)
-        adapter.remove_signal_receiver(bt_manager.BTAdapter.SIGNAL_NAME_PROPERTY_CHANGED)  # noqa
+        user.callback_fn.assert_called_with(signal, self, name, value)
+        adapter.remove_signal_receiver(signal)
         self.mock_system_bus.remove_signal_receiver.assert_called()
 
     def test_adapter_signal_name_exception(self):
@@ -232,38 +280,28 @@ class BTAdapterTest(unittest.TestCase):
 
     def test_adapter_create_device(self):
 
-        global cb_notify_device_called, cb_notify_error_called
-        cb_notify_device_called = False
-
-        def cb_notify_device(*args):
-            global cb_notify_device_called
-            cb_notify_device_called = True
-        cb_notify_error_called = False
-
-        def cb_notify_error(*args):
-            global cb_notify_error_called
-            cb_notify_error_called = True
-
+        user = mock.MagicMock()
         adapter = bt_manager.BTAdapter()
         dev_id = '00:11:67:D2:AB:EE'
-        path = dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
+        path = '/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE'
         caps = None
 
         adapter.create_paired_device(dev_id, path,
-                                     caps, cb_notify_device,
-                                     cb_notify_error)
+                                     caps, user.cb_notify_device,
+                                     user.cb_notify_error)
         adapter._interface._test_notify_device_created_ok()
-        self.assertTrue(cb_notify_device_called)
+        user.cb_notify_device.assert_called()
         adapter._interface._test_notify_device_created_error()
-        self.assertTrue(cb_notify_error_called)
+        user.cb_notify_error.assert_called()
 
     def test_adapter_remove_device(self):
         adapter = bt_manager.BTAdapter()
-        adapter.remove_device('00:11:67:D2:AB:EE')
+        adapter.remove_device('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
 
     def test_adapter_register_agent(self):
         adapter = bt_manager.BTAdapter()
         adapter.register_agent('/test/agent', 'DisplayYesNo')
+        adapter.unregister_agent('/test/agent')
 
 
 class BTDeviceTest(unittest.TestCase):
@@ -284,7 +322,7 @@ class BTDeviceTest(unittest.TestCase):
         adapter_id = adapter.Address
         devices = adapter.list_devices()
         dev_path = devices[0]
-        device = bt_manager.BTDevice(dev_object_path=dev_path)
+        device = bt_manager.BTDevice(dev_path=dev_path)
         print 'Vendor Name:', bt_manager.VENDORS.get(device.Vendor, 'Unknown')
         print device
         print '========================================================='
@@ -304,7 +342,7 @@ class BTDeviceTest(unittest.TestCase):
             print bt_manager.SERVICES.get(uuid.uuid16, 'Unknown')
         print '========================================================='
         device = bt_manager.BTDevice(adapter_id=adapter_id,
-                                     dev_object_path=dev_path)
+                                     dev_path=dev_path)
         print device
         print '========================================================='
         device = bt_manager.BTDevice(dev_id='00:11:67:D2:AB:EE')
@@ -316,9 +354,63 @@ class BTDeviceTest(unittest.TestCase):
     def test_set_device_property(self):
         devices = bt_manager.BTAdapter().list_devices()
         dev_path = devices[0]
-        device = bt_manager.BTDevice(dev_object_path=dev_path)
+        device = bt_manager.BTDevice(dev_path=dev_path)
         device.Trusted = False
         self.assertEqual(device.Trusted, False)
+
+
+class BTAudioSink(unittest.TestCase):
+
+    def setUp(self):
+        patcher = mock.patch('dbus.Interface', MockDBusInterface)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        patcher = mock.patch('dbus.SystemBus')
+        patched_system_bus = patcher.start()
+        self.addCleanup(patcher.stop)
+        mock_system_bus = mock.MagicMock()
+        patched_system_bus.return_value = mock_system_bus
+        mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
+
+    def test_audio_sink_properties(self):
+        sink = bt_manager.BTAudioSink(dev_id='00:11:67:D2:AB:EE')
+        print sink
+        print '========================================================='
+        print repr(sink)
+        print '========================================================='
+
+    def test_audio_sink_connectivity(self):
+        sink = bt_manager.BTAudioSink(dev_id='00:11:67:D2:AB:EE')
+        sink.connect()
+        self.assertTrue(sink.is_connected())
+        sink.disconnect()
+        self.assertFalse(sink.is_connected())
+
+
+class BTControl(unittest.TestCase):
+
+    def setUp(self):
+        patcher = mock.patch('dbus.Interface', MockDBusInterface)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        patcher = mock.patch('dbus.SystemBus')
+        patched_system_bus = patcher.start()
+        self.addCleanup(patcher.stop)
+        mock_system_bus = mock.MagicMock()
+        patched_system_bus.return_value = mock_system_bus
+        mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
+
+    def test_control_properties(self):
+        ctrl = bt_manager.BTControl(dev_id='00:11:67:D2:AB:EE')
+        print ctrl
+        print '========================================================='
+        print repr(ctrl)
+        print '========================================================='
+
+    def test_control_volume(self):
+        ctrl = bt_manager.BTControl(dev_id='00:11:67:D2:AB:EE')
+        ctrl.volume_up()
+        ctrl.volume_down()
 
 
 class BTAgentTest(unittest.TestCase):
@@ -328,10 +420,7 @@ class BTAgentTest(unittest.TestCase):
         mock_system_bus = mock.MagicMock()
         patched_system_bus.return_value = mock_system_bus
         mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
-        adapter = mock.MagicMock()
-        agent = bt_manager.BTAgent(adapter)
-        adapter.register_agent.assert_called_with('/test/agent',
-                                                  'DisplayYesNo')
+        agent = bt_manager.BTAgent()
 
         obj = dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
         uuid = dbus.String(u'00001108-0000-1000-8000-00805f9b34fb')
@@ -353,10 +442,8 @@ class BTAgentTest(unittest.TestCase):
         mock_system_bus = mock.MagicMock()
         patched_system_bus.return_value = mock_system_bus
         mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
-        adapter = mock.MagicMock()
         user = mock.MagicMock()
-        agent = bt_manager.BTAgent(adapter,
-                                   cb_notify_on_release=user.cb_notify_on_release,  # noqa
+        agent = bt_manager.BTAgent(cb_notify_on_release=user.cb_notify_on_release,  # noqa
                                    cb_notify_on_authorize=user.cb_notify_on_authorize,  # noqa
                                    cb_notify_on_request_pin_code=user.cb_notify_on_request_pin_code,  # noqa
                                    cb_notify_on_request_pass_key=user.cb_notify_on_request_pass_key,  # noqa
@@ -364,8 +451,6 @@ class BTAgentTest(unittest.TestCase):
                                    cb_notify_on_request_confirmation=user.cb_notify_on_request_confirmation,  # noqa
                                    cb_notify_on_confirm_mode_change=user.cb_notify_on_confirm_mode_change,  # noqa
                                    cb_notify_on_cancel=user.cb_notify_on_cancel)  # noqa
-        adapter.register_agent.assert_once_called_with('/test/agent',
-                                                       'DisplayYesNo')
 
         obj = dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
         uuid = dbus.String(u'00001108-0000-1000-8000-00805f9b34fb')
@@ -385,7 +470,7 @@ class BTAgentTest(unittest.TestCase):
         try:
             exception_raised = False
             agent.Authorize(obj, uuid)
-        except bt_manager.RejectedException:
+        except bt_manager.BTRejectedException:
             exception_raised = True
         user.cb_notify_on_authorize.assert_called_once_with(obj, uuid)
         self.assertTrue(exception_raised)
@@ -399,7 +484,7 @@ class BTAgentTest(unittest.TestCase):
         try:
             exception_raised = False
             agent.RequestPinCode(obj)
-        except bt_manager.RejectedException:
+        except bt_manager.BTRejectedException:
             exception_raised = True
         user.cb_notify_on_request_pin_code.assert_called_once_with(obj)
         self.assertTrue(exception_raised)
@@ -413,7 +498,7 @@ class BTAgentTest(unittest.TestCase):
         try:
             exception_raised = False
             agent.RequestPasskey(obj)
-        except bt_manager.RejectedException:
+        except bt_manager.BTRejectedException:
             exception_raised = True
         user.cb_notify_on_request_pass_key.assert_called_once_with(obj)
         self.assertTrue(exception_raised)
@@ -430,7 +515,7 @@ class BTAgentTest(unittest.TestCase):
         try:
             exception_raised = False
             agent.RequestConfirmation(obj, pass_key)
-        except bt_manager.RejectedException:
+        except bt_manager.BTRejectedException:
             exception_raised = True
         user.cb_notify_on_request_confirmation.assert_called_once_with(obj, pass_key)  # noqa
         self.assertTrue(exception_raised)
@@ -444,7 +529,7 @@ class BTAgentTest(unittest.TestCase):
         try:
             exception_raised = False
             agent.ConfirmModeChange(mode)
-        except bt_manager.RejectedException:
+        except bt_manager.BTRejectedException:
             exception_raised = True
         user.cb_notify_on_confirm_mode_change.assert_called_once_with(mode)
         self.assertTrue(exception_raised)
@@ -457,9 +542,7 @@ class BTAgentTest(unittest.TestCase):
         mock_system_bus = mock.MagicMock()
         patched_system_bus.return_value = mock_system_bus
         mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
-        adapter = mock.MagicMock()
-        agent = bt_manager.BTAgent(adapter,
-                                   default_pin_code=None,
+        agent = bt_manager.BTAgent(default_pin_code=None,
                                    default_pass_key=None)
 
         obj = dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
@@ -467,13 +550,13 @@ class BTAgentTest(unittest.TestCase):
         try:
             exception_raised = False
             agent.RequestPinCode(obj)
-        except bt_manager.RejectedException:
+        except bt_manager.BTRejectedException:
             exception_raised = True
         self.assertTrue(exception_raised)
 
         try:
             exception_raised = False
             agent.RequestPasskey(obj)
-        except bt_manager.RejectedException:
+        except bt_manager.BTRejectedException:
             exception_raised = True
         self.assertTrue(exception_raised)
