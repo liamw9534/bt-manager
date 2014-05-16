@@ -162,10 +162,10 @@ class BTCoD:
         return minor_device
 
     def __str__(self):
-        return 'Major Service: ' + str(self.major_service_class) + \
-            ' / Major Device: ' + \
-            self.major_device_class + ' / Minor Device: ' + \
-            str(self.minor_device_class)
+        return '<cod:' + str(hex(self.cod)) + ' Major Service:' + str(self.major_service_class) + \
+            ' Major Device:' + \
+            self.major_device_class + ' Minor Device:' + \
+            str(self.minor_device_class) + '>'
 
     def __repr__(self):
         return self.__str__()

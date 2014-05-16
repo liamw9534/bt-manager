@@ -30,7 +30,8 @@ class BTUUID:
         return self.uuid[0:8]
 
     def __repr__(self):
-        return 'uuid = ' + self.uuid + ' : ' + self.name + ' : ' + self.desc
+        return '<uuid:' + self.uuid + ' name:' + \
+            self.name + ' desc:' + self.desc + '>'
 
 
 class BTUUID16(BTUUID):

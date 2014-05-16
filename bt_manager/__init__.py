@@ -10,3 +10,4 @@ from bt_manager.BTUUID import BTUUIDNotSpecifiedException  # noqa
 from bt_manager.BTBus import *                             # noqa
 from bt_manager.BTCoD import BTCoD                         # noqa
 from bt_manager.BTVendorId import VENDORS                  # noqa
+from bt_manager.BTDiscoveryInfo import BTDiscoveryInfo     # noqa

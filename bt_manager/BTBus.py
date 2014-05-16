@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import dbus
 import dbus.service
 import types
+import pprint
 
 
 def translate_to_dbus_type(value):
@@ -118,16 +119,11 @@ class BTInterface:
 
     def __repr__(self):
         """Stringify the Dbus interface properties as raw"""
-        h = self._interface.GetProperties()
-        return str(h)
+        return pprint.pformat(self._interface.GetProperties())
 
     def __str__(self):
         """Stringify the Dbus interface properties in a nice format"""
-        h = self._interface.GetProperties()
-        s = ''
-        for i in h.keys():
-            s += i + ': ' + str(h[i]) + '\n'
-        return s
+        return pprint.pformat(self._interface.GetProperties())
 
 
 class BTManager(BTInterface):
@@ -242,6 +238,9 @@ class BTDevice(BTGenericDevice):
         BTGenericDevice.__init__(self, addr='org.bluez.Device',
                                  *args, **kwargs)
         self._register_signal_name(BTDevice.SIGNAL_DISCONNECT_REQUESTED)
+
+    def discover_services(self, pattern=None):
+        return self._interface.DiscoverServices(pattern)
 
     def disconnect(self):
         self._interface.Disconnect()

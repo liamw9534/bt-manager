@@ -176,7 +176,7 @@ __MultiProfile = {
 }
 
 ATTRIBUTES = {
-    'xxxx': __Universal,
+    '*': __Universal,
     '110A': __SupportedFeatureOnly,
     '110B': __SupportedFeatureOnly,
     '110C': __SupportedFeatureOnly,

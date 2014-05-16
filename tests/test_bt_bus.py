@@ -63,6 +63,342 @@ class MockDBusInterface:
                                            dbus.String(u'Trusted'): dbus.Boolean(True, variant_level=1),  # noqa
                                            dbus.String(u'Icon'): dbus.String(u'audio-card', variant_level=1)},  # noqa
                                           signature=dbus.Signature('sv'))
+
+            service_xml = (
+                """<?xml version="1.0" encoding="UTF-8" ?>
+<record>
+    <attribute id="0x0000">
+        <uint32 value="0x00010001" />
+    </attribute>
+    <attribute id="0x0001">
+        <sequence>
+            <uuid value="0x1200" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0004">
+        <sequence>
+            <sequence>
+                <uuid value="0x0100" />
+                <uint16 value="0x0001" />
+            </sequence>
+            <sequence>
+                <uuid value="0x0001" />
+            </sequence>
+        </sequence>
+    </attribute>
+    <attribute id="0x0006">
+        <sequence>
+            <uint16 value="0x656e" />
+            <uint16 value="0x006a" />
+            <uint16 value="0x0100" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0009">
+        <sequence>
+            <sequence>
+                <uuid value="0x1200" />
+                <uint16 value="0x0100" />
+            </sequence>
+        </sequence>
+    </attribute>
+    <attribute id="0x0200">
+        <uint16 value="0x0103" />
+    </attribute>
+    <attribute id="0x0201">
+        <uint16 value="0x0039" />
+    </attribute>
+    <attribute id="0x0202">
+        <uint16 value="0x13a4" />
+    </attribute>
+    <attribute id="0x0203">
+        <uint16 value="0x0104" />
+    </attribute>
+    <attribute id="0x0204">
+        <boolean value="true" />
+    </attribute>
+    <attribute id="0x0205">
+        <uint16 value="0x0001" />
+    </attribute>
+</record>
+""",
+
+                """<?xml version="1.0" encoding="UTF-8" ?>
+<record>
+    <attribute id="0x0000">
+        <uint32 value="0x00010002" />
+    </attribute>
+    <attribute id="0x0001">
+        <sequence>
+            <uuid value="0x1108" />
+            <uuid value="0x1203" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0004">
+        <sequence>
+            <sequence>
+                <uuid value="0x0100" />
+            </sequence>
+            <sequence>
+                <uuid value="0x0003" />
+                <uint8 value="0x02" />
+            </sequence>
+        </sequence>
+    </attribute>
+    <attribute id="0x0006">
+        <sequence>
+            <uint16 value="0x656e" />
+            <uint16 value="0x006a" />
+            <uint16 value="0x0100" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0009">
+        <sequence>
+            <sequence>
+                <uuid value="0x1108" />
+                <uint16 value="0x0100" />
+            </sequence>
+        </sequence>
+    </attribute>
+    <attribute id="0x0100">
+        <text value="Headset unit" />
+    </attribute>
+    <attribute id="0x0302">
+        <boolean value="true" />
+    </attribute>
+</record>
+""",
+
+                """<?xml version="1.0" encoding="UTF-8" ?>
+<record>
+    <attribute id="0x0000">
+        <uint32 value="0x00010003" />
+    </attribute>
+    <attribute id="0x0001">
+        <sequence>
+            <uuid value="0x111e" />
+            <uuid value="0x1203" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0004">
+        <sequence>
+            <sequence>
+                <uuid value="0x0100" />
+            </sequence>
+            <sequence>
+                <uuid value="0x0003" />
+                <uint8 value="0x01" />
+            </sequence>
+        </sequence>
+    </attribute>
+    <attribute id="0x0006">
+        <sequence>
+            <uint16 value="0x656e" />
+            <uint16 value="0x006a" />
+            <uint16 value="0x0100" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0009">
+        <sequence>
+            <sequence>
+                <uuid value="0x111e" />
+                <uint16 value="0x0105" />
+            </sequence>
+        </sequence>
+    </attribute>
+    <attribute id="0x0100">
+        <text value="Hands-free unit" />
+    </attribute>
+    <attribute id="0x0311">
+        <uint16 value="0x001f" />
+    </attribute>
+</record>
+""",
+
+                """<?xml version="1.0" encoding="UTF-8" ?>
+<record>
+    <attribute id="0x0000">
+        <uint32 value="0x00010006" />
+    </attribute>
+    <attribute id="0x0001">
+        <sequence>
+            <uuid value="0x110e" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0004">
+        <sequence>
+            <sequence>
+                <uuid value="0x0100" />
+                <uint16 value="0x0017" />
+            </sequence>
+            <sequence>
+                <uuid value="0x0017" />
+                <uint16 value="0x0102" />
+            </sequence>
+        </sequence>
+    </attribute>
+    <attribute id="0x0006">
+        <sequence>
+            <uint16 value="0x656e" />
+            <uint16 value="0x006a" />
+            <uint16 value="0x0100" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0009">
+        <sequence>
+            <sequence>
+                <uuid value="0x110e" />
+                <uint16 value="0x0103" />
+            </sequence>
+        </sequence>
+    </attribute>
+    <attribute id="0x0100">
+        <text value="AVRCP CT" />
+    </attribute>
+    <attribute id="0x0102">
+        <text value="ISSC" />
+    </attribute>
+    <attribute id="0x0311">
+        <uint16 value="0x0001" />
+    </attribute>
+</record>
+""",
+
+                """<?xml version="1.0" encoding="UTF-8" ?>
+<record>
+    <attribute id="0x0000">
+        <uint32 value="0x00010008" />
+    </attribute>
+    <attribute id="0x0001">
+        <sequence>
+            <uuid value="0x110b" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0004">
+        <sequence>
+            <sequence>
+                <uuid value="0x0100" />
+                <uint16 value="0x0019" />
+            </sequence>
+            <sequence>
+                <uuid value="0x0019" />
+                <uint16 value="0x0100" />
+            </sequence>
+        </sequence>
+    </attribute>
+    <attribute id="0x0006">
+        <sequence>
+            <uint16 value="0x656e" />
+            <uint16 value="0x006a" />
+            <uint16 value="0x0100" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0009">
+        <sequence>
+            <sequence>
+                <uuid value="0x110d" />
+                <uint16 value="0x0100" />
+            </sequence>
+        </sequence>
+    </attribute>
+    <attribute id="0x0100">
+        <text value="Audio SNK" />
+    </attribute>
+    <attribute id="0x0102">
+        <text value="ISSC" />
+    </attribute>
+    <attribute id="0x0311">
+        <uint16 value="0x0003" />
+    </attribute>
+</record>
+""",
+
+                """<?xml version="1.0" encoding="UTF-8" ?>
+<record>
+    <attribute id="0x0000">
+        <uint32 value="0x0001000c" />
+    </attribute>
+    <attribute id="0x0001">
+        <sequence>
+            <uuid value="0x110c" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0004">
+        <sequence>
+            <sequence>
+                <uuid value="0x0100" />
+                <uint16 value="0x0017" />
+            </sequence>
+            <sequence>
+                <uuid value="0x0017" />
+                <uint16 value="0x0100" />
+            </sequence>
+        </sequence>
+    </attribute>
+    <attribute id="0x0006">
+        <sequence>
+            <uint16 value="0x656e" />
+            <uint16 value="0x006a" />
+            <uint16 value="0x0100" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0009">
+        <sequence>
+            <sequence>
+                <uuid value="0x110e" />
+                <uint16 value="0x0100" />
+            </sequence>
+        </sequence>
+    </attribute>
+    <attribute id="0x0100">
+        <text value="AVRCP TG" />
+    </attribute>
+    <attribute id="0x0102">
+        <text value="ISSC" />
+    </attribute>
+    <attribute id="0x0311">
+        <uint16 value="0x0002" />
+    </attribute>
+</record>
+""",
+
+                """<?xml version="1.0" encoding="UTF-8" ?>
+<record>
+    <attribute id="0x0000">
+        <uint32 value="0x0001000f" />
+    </attribute>
+    <attribute id="0x0001">
+        <sequence>
+            <uuid value="0x112e" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0006">
+        <sequence>
+            <uint16 value="0x656e" />
+            <uint16 value="0x006a" />
+            <uint16 value="0x0100" />
+        </sequence>
+    </attribute>
+    <attribute id="0x0009">
+        <sequence>
+            <sequence>
+                <uuid value="0x1130" />
+                <uint16 value="0x0100" />
+            </sequence>
+        </sequence>
+    </attribute>
+</record>
+"""
+                )
+
+            self._services = dbus.Dictionary({dbus.UInt32(65537L): dbus.String(service_xml[0]),  # noqa
+                                              dbus.UInt32(65538L): dbus.String(service_xml[1]),  # noqa
+                                              dbus.UInt32(65539L): dbus.String(service_xml[2]),  # noqa
+                                              dbus.UInt32(65542L): dbus.String(service_xml[3]),  # noqa
+                                              dbus.UInt32(65544L): dbus.String(service_xml[4]),  # noqa
+                                              dbus.UInt32(65548L): dbus.String(service_xml[5]),  # noqa
+                                              dbus.UInt32(65551L): dbus.String(service_xml[6]),  # noqa
+                                              }, signature=dbus.Signature('us'))  # noqa
+
         elif (self.addr == 'org.bluez.Manager'):
             self._props = {u'Adapters': ['/org/bluez/985/hci0']}
         elif (self.addr == 'org.bluez.AudioSink'):
@@ -128,6 +464,9 @@ class MockDBusInterface:
 
     def VolumeDown(self):
         pass
+
+    def DiscoverServices(self, pattern):
+        return self._services
 
     def _test_notify_device_created_ok(self):
         self._cb_notify_device('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')  # noqa
@@ -357,6 +696,14 @@ class BTDeviceTest(unittest.TestCase):
         device = bt_manager.BTDevice(dev_path=dev_path)
         device.Trusted = False
         self.assertEqual(device.Trusted, False)
+
+    def test_discover_services(self):
+        device = bt_manager.BTDevice(dev_id='00:11:67:D2:AB:EE')
+        services = device.discover_services()
+        print '========================================================='
+        for rec in services.keys():
+            print bt_manager.BTDiscoveryInfo(services[rec])
+        print '========================================================='
 
 
 class BTAudioSink(unittest.TestCase):
