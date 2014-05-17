@@ -31,7 +31,7 @@ class BTUUID:
 
     def __repr__(self):
         return '<uuid:' + self.uuid + ' name:' + \
-            self.name + ' desc:' + self.desc + '>'
+            str(self.name) + ' desc:' + str(self.desc) + '>'
 
 
 class BTUUID16(BTUUID):

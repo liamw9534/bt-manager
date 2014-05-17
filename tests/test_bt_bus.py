@@ -436,10 +436,10 @@ class MockDBusInterface:
         return ['/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE']
 
     def CreatePairedDevice(self, dev_id, path, caps,
-                           cb_notify_device, cb_notify_error):
+                           reply_handler, error_handler):
         self._cb_notify_dev_id = dev_id
-        self._cb_notify_device = cb_notify_device
-        self._cb_notify_error = cb_notify_error
+        self._cb_notify_device = reply_handler
+        self._cb_notify_error = error_handler
 
     def RemoveDevice(self, dev_obj):
         pass
@@ -772,7 +772,7 @@ class BTAgentTest(unittest.TestCase):
         obj = dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')
         uuid = dbus.String(u'00001108-0000-1000-8000-00805f9b34fb')
         pin_code = dbus.String('0000')
-        pass_key = dbus.UInt32(0x12345678L)
+        pass_key = dbus.UInt32(0)
         mode = 'Mode'
 
         self.assertEqual(agent.Release(), None)
@@ -810,7 +810,8 @@ class BTAgentTest(unittest.TestCase):
 
         user.cb_notify_on_authorize.return_value = True
         self.assertEqual(agent.Authorize(obj, uuid), None)
-        user.cb_notify_on_authorize.assert_called_once_with(obj, uuid)
+        user.cb_notify_on_authorize.assert_called_once_with(bt_manager.BTAgent.NOTIFY_ON_AUTHORIZE,  # noqa
+                                                            obj, uuid)
 
         user.reset_mock()
         user.cb_notify_on_authorize.return_value = False
@@ -819,12 +820,14 @@ class BTAgentTest(unittest.TestCase):
             agent.Authorize(obj, uuid)
         except bt_manager.BTRejectedException:
             exception_raised = True
-        user.cb_notify_on_authorize.assert_called_once_with(obj, uuid)
+        user.cb_notify_on_authorize.assert_called_once_with(bt_manager.BTAgent.NOTIFY_ON_AUTHORIZE,  # noqa
+                                                            obj, uuid)
         self.assertTrue(exception_raised)
 
         user.cb_notify_on_request_pin_code.return_value = pin_code
         self.assertEqual(agent.RequestPinCode(obj), pin_code)
-        user.cb_notify_on_request_pin_code.assert_called_once_with(obj)
+        user.cb_notify_on_request_pin_code.assert_called_once_with(bt_manager.BTAgent.NOTIFY_ON_REQUEST_PIN_CODE,  # noqa
+                                                                   obj)
 
         user.reset_mock()
         user.cb_notify_on_request_pin_code.return_value = None
@@ -833,12 +836,14 @@ class BTAgentTest(unittest.TestCase):
             agent.RequestPinCode(obj)
         except bt_manager.BTRejectedException:
             exception_raised = True
-        user.cb_notify_on_request_pin_code.assert_called_once_with(obj)
+        user.cb_notify_on_request_pin_code.assert_called_once_with(bt_manager.BTAgent.NOTIFY_ON_REQUEST_PIN_CODE,  # noqa
+                                                                   obj)
         self.assertTrue(exception_raised)
 
         user.cb_notify_on_request_pass_key.return_value = pass_key
         self.assertEqual(agent.RequestPasskey(obj), pass_key)
-        user.cb_notify_on_request_pass_key.assert_called_once_with(obj)
+        user.cb_notify_on_request_pass_key.assert_called_once_with(bt_manager.BTAgent.NOTIFY_ON_REQUEST_PASS_KEY,  # noqa
+                                                                   obj)
 
         user.reset_mock()
         user.cb_notify_on_request_pass_key.return_value = None
@@ -847,15 +852,20 @@ class BTAgentTest(unittest.TestCase):
             agent.RequestPasskey(obj)
         except bt_manager.BTRejectedException:
             exception_raised = True
-        user.cb_notify_on_request_pass_key.assert_called_once_with(obj)
+        user.cb_notify_on_request_pass_key.assert_called_once_with(bt_manager.BTAgent.NOTIFY_ON_REQUEST_PASS_KEY,  # noqa
+                                                                   obj)
         self.assertTrue(exception_raised)
 
         self.assertEqual(agent.DisplayPasskey(obj, pass_key), None)
-        user.cb_notify_on_display_pass_key.assert_called_once_with(obj, pass_key)  # noqa
+        user.cb_notify_on_display_pass_key.assert_called_once_with(bt_manager.BTAgent.NOTIFY_ON_DISPLAY_PASS_KEY,  # noqa
+                                                                   obj,
+                                                                   pass_key)
 
         user.cb_notify_on_request_confirmation.return_value = True
         self.assertEqual(agent.RequestConfirmation(obj, pass_key), None)
-        user.cb_notify_on_request_confirmation.assert_called_once_with(obj, pass_key)  # noqa
+        user.cb_notify_on_request_confirmation.assert_called_once_with(bt_manager.BTAgent.NOTIFY_ON_REQUEST_CONFIRMATION,  # noqa
+                                                                       obj,
+                                                                       pass_key)  # noqa
 
         user.reset_mock()
         user.cb_notify_on_request_confirmation.return_value = False
@@ -864,12 +874,15 @@ class BTAgentTest(unittest.TestCase):
             agent.RequestConfirmation(obj, pass_key)
         except bt_manager.BTRejectedException:
             exception_raised = True
-        user.cb_notify_on_request_confirmation.assert_called_once_with(obj, pass_key)  # noqa
+        user.cb_notify_on_request_confirmation.assert_called_once_with(bt_manager.BTAgent.NOTIFY_ON_REQUEST_CONFIRMATION,  # noqa
+                                                                       obj,
+                                                                       pass_key)  # noqa
         self.assertTrue(exception_raised)
 
         user.cb_notify_on_confirm_mode_change.return_value = True
         self.assertEqual(agent.ConfirmModeChange(mode), None)
-        user.cb_notify_on_confirm_mode_change.assert_called_once_with(mode)
+        user.cb_notify_on_confirm_mode_change.assert_called_once_with(bt_manager.BTAgent.NOTIFY_ON_CONFIRM_MODE_CHANGE,  # noqa
+                                                                      mode)
 
         user.reset_mock()
         user.cb_notify_on_confirm_mode_change.return_value = False
@@ -878,11 +891,12 @@ class BTAgentTest(unittest.TestCase):
             agent.ConfirmModeChange(mode)
         except bt_manager.BTRejectedException:
             exception_raised = True
-        user.cb_notify_on_confirm_mode_change.assert_called_once_with(mode)
+        user.cb_notify_on_confirm_mode_change.assert_called_once_with(bt_manager.BTAgent.NOTIFY_ON_CONFIRM_MODE_CHANGE,  # noqa
+                                                                      mode)
         self.assertTrue(exception_raised)
 
         self.assertEqual(agent.Cancel(), None)
-        user.cb_notify_on_cancel.assert_called_once_with()
+        user.cb_notify_on_cancel.assert_called_once_with(bt_manager.BTAgent.NOTIFY_ON_CANCEL)  # noqa
 
     @mock.patch('dbus.SystemBus')
     def test_agent_corner_cases(self, patched_system_bus):
