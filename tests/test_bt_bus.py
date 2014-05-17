@@ -479,18 +479,29 @@ class MockDBusInterface:
 class BTDbusTypeTranslation(unittest.TestCase):
 
     def test_all(self):
-        self.assertTrue(isinstance(bt_manager.translate_to_dbus_type([]),
-                                   dbus.Array))
-        self.assertTrue(isinstance(bt_manager.translate_to_dbus_type(-1),
-                                   dbus.Int32))
-        self.assertTrue(isinstance(bt_manager.translate_to_dbus_type(1),
-                                   dbus.UInt32))
-        self.assertTrue(isinstance(bt_manager.translate_to_dbus_type(u'Test'),
-                                   dbus.String))
-        self.assertTrue(isinstance(bt_manager.translate_to_dbus_type('Test'),
-                                   dbus.String))
-        self.assertTrue(isinstance(bt_manager.translate_to_dbus_type({}),
-                                   dict))
+
+        val = [1, 2, 3, 4, 5]
+        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.Array, val),
+                         dbus.Array(val))
+        val = -1
+        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.Int32, val),
+                         dbus.Int32(val))
+        val = 1
+        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.UInt32, val),
+                         dbus.UInt32(val))
+        val = 'Test'
+        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.String, val),
+                         dbus.String(val))
+        val = {'Hello': 1}
+        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.Dictionary,
+                                                           val),
+                         dbus.Dictionary(val))
+        val = 'True'
+        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.Boolean, val),
+                         dbus.Boolean(True))
+        val = 'False'
+        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.Boolean, val),
+                         dbus.Boolean(False))
 
 
 class BTManagerTest(unittest.TestCase):

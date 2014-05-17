@@ -6,23 +6,16 @@ import types
 import pprint
 
 
-def translate_to_dbus_type(value):
+def translate_to_dbus_type(typeof, value):
     """Helper function to map values from their native Python types
     to Dbus types"""
-    if (isinstance(value, list)):
-        return dbus.Array([translate_to_dbus_type(k) for k in value])
-    elif (isinstance(value, int) and value < 0):
-        return dbus.Int32(value)
-    elif (isinstance(value, int) and value >= 0):
-        return dbus.UInt32(value)
-    elif (isinstance(value, str)):
-        return dbus.String(value)
-    elif (isinstance(value, bool)):
-        return dbus.Boolean(value)
-    elif (isinstance(value, types.UnicodeType)):
-        return dbus.String(value)
+    if ((isinstance(value, types.UnicodeType) or
+         isinstance(value, str)) and typeof is not dbus.String):
+        # FIXME: This is potentially dangerous since it evaluates
+        # a string in-situ
+        return typeof(eval(value))
     else:
-        return value
+        return typeof(value)
 
 
 class BTRejectedException(dbus.DBusException):
@@ -99,7 +92,9 @@ class BTInterface:
     def set_property(self, name, value):
         """Helper to set a property value by name, translating to correct
         DBus type"""
-        self._interface.SetProperty(name, translate_to_dbus_type(value))
+        typeof = type(self.get_property(name))
+        self._interface.SetProperty(name,
+                                    translate_to_dbus_type(typeof, value))
 
     def __getattr__(self, name):
         """Override default getattr behaviours to allow DBus object
