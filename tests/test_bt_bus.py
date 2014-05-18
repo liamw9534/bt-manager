@@ -405,6 +405,162 @@ class MockDBusInterface:
             self._props = {u'Connected': False}
         elif (self.addr == 'org.bluez.Control'):
             self._props = {u'Connected': False}
+        elif (self.addr == 'org.bluez.Media'):
+            pass
+        elif (self.addr == 'org.freedesktop.DBus.Introspectable'):
+            self._introspect = \
+                """
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+    <interface name="org.freedesktop.DBus.Introspectable">
+        <method name="Introspect">
+            <arg type="s" direction="out"/>
+        </method>
+    </interface>
+    <interface name="org.bluez.Device">
+        <method name="GetProperties">
+            <arg type="a{sv}" direction="out"/>
+        </method>
+        <method name="SetProperty">
+            <arg type="s" direction="in"/>
+            <arg type="v" direction="in"/>
+        </method>
+        <method name="DiscoverServices">
+            <arg type="s" direction="in"/>
+            <arg type="a{us}" direction="out"/>
+        </method>
+        <method name="CancelDiscovery"/>
+        <method name="Disconnect"/>
+        <signal name="PropertyChanged">
+            <arg type="s"/>
+            <arg type="v"/>
+        </signal>
+        <signal name="DisconnectRequested"/>
+    </interface>
+    <interface name="org.bluez.Serial">
+        <method name="Connect">
+            <arg type="s" direction="in"/>
+            <arg type="s" direction="out"/>
+        </method>
+        <method name="ConnectFD">
+            <arg type="s" direction="in"/>
+            <arg type="h" direction="out"/>
+        </method>
+        <method name="Disconnect">
+            <arg type="s" direction="in"/>
+        </method>
+    </interface>
+    <interface name="org.bluez.Input">
+        <method name="Connect"/>
+        <method name="Disconnect"/>
+        <method name="GetProperties">
+            <arg type="a{sv}" direction="out"/>
+        </method>
+        <signal name="PropertyChanged">
+            <arg type="s"/>
+            <arg type="v"/>
+        </signal>
+    </interface>
+    <interface name="org.bluez.Audio">
+        <method name="Connect"/>
+        <method name="Disconnect"/>
+        <method name="GetProperties">
+            <arg type="a{sv}" direction="out"/>
+        </method>
+        <signal name="PropertyChanged">
+            <arg type="s"/>
+            <arg type="v"/>
+        </signal>
+    </interface>
+    <interface name="org.bluez.Headset">
+        <method name="Connect"/>
+        <method name="Disconnect"/>
+        <method name="IsConnected">
+            <arg type="b" direction="out"/>
+        </method>
+        <method name="IndicateCall"/>
+        <method name="CancelCall"/>
+        <method name="Play"/>
+        <method name="Stop"/>
+        <method name="IsPlaying">
+            <arg type="b" direction="out"/>
+        </method>
+        <method name="GetSpeakerGain">
+            <arg type="q" direction="out"/>
+        </method>
+        <method name="GetMicrophoneGain">
+            <arg type="q" direction="out"/>
+        </method>
+        <method name="SetSpeakerGain">
+            <arg type="q" direction="in"/>
+        </method>
+        <method name="SetMicrophoneGain">
+            <arg type="q" direction="in"/>
+        </method>
+        <method name="GetProperties">
+            <arg type="a{sv}" direction="out"/>
+        </method>
+        <method name="SetProperty">
+            <arg type="s" direction="in"/>
+            <arg type="v" direction="in"/>
+        </method>
+        <signal name="Connected"/>
+        <signal name="Disconnected"/>
+        <signal name="AnswerRequested"/>
+        <signal name="Stopped"/>
+        <signal name="Playing"/>
+        <signal name="SpeakerGainChanged">
+            <arg type="q"/>
+        </signal>
+        <signal name="MicrophoneGainChanged">
+            <arg type="q"/>
+        </signal>
+        <signal name="CallTerminated"/>
+        <signal name="PropertyChanged">
+            <arg type="s"/>
+            <arg type="v"/>
+        </signal>
+    </interface>
+    <interface name="org.bluez.AudioSink">
+        <method name="Connect"/>
+        <method name="Disconnect"/>
+        <method name="IsConnected">
+            <arg type="b" direction="out"/>
+        </method>
+        <method name="GetProperties">
+            <arg type="a{sv}" direction="out"/>
+        </method>
+        <signal name="Connected"/>
+        <signal name="Disconnected"/>
+        <signal name="Playing"/>
+        <signal name="Stopped"/>
+        <signal name="PropertyChanged">
+            <arg type="s"/>
+            <arg type="v"/>
+        </signal>
+    </interface>
+    <interface name="org.bluez.Control">
+        <method name="IsConnected">
+            <arg type="b" direction="out"/>
+        </method>
+        <method name="GetProperties">
+            <arg type="a{sv}" direction="out"/>
+        </method>
+        <method name="VolumeUp"/>
+        <method name="VolumeDown"/>
+        <signal name="Connected"/>
+        <signal name="Disconnected"/>
+        <signal name="PropertyChanged">
+            <arg type="s"/>
+            <arg type="v"/>
+        </signal>
+    </interface>
+</node>
+"""
+
+    def Introspect(self, addr):
+        return self._introspect[1:]  # Strip leading \n
 
     def StartDiscovery(self):
         self._props[dbus.String(u'Discovering')] = \
@@ -467,6 +623,18 @@ class MockDBusInterface:
 
     def DiscoverServices(self, pattern):
         return self._services
+
+    def RegisterEndpoint(self, path, properties):
+        pass
+
+    def RegisterPlayer(self, path, properties):
+        pass
+
+    def UnregisterEndpoint(self, path):
+        pass
+
+    def UnregisterPlayer(self, path):
+        pass
 
     def _test_notify_device_created_ok(self):
         self._cb_notify_device('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')  # noqa
@@ -717,7 +885,7 @@ class BTDeviceTest(unittest.TestCase):
         print '========================================================='
 
 
-class BTAudioSink(unittest.TestCase):
+class BTAudioSinkTest(unittest.TestCase):
 
     def setUp(self):
         patcher = mock.patch('dbus.Interface', MockDBusInterface)
@@ -745,7 +913,7 @@ class BTAudioSink(unittest.TestCase):
         self.assertFalse(sink.is_connected())
 
 
-class BTControl(unittest.TestCase):
+class BTControlTest(unittest.TestCase):
 
     def setUp(self):
         patcher = mock.patch('dbus.Interface', MockDBusInterface)
@@ -769,6 +937,33 @@ class BTControl(unittest.TestCase):
         ctrl = bt_manager.BTControl(dev_id='00:11:67:D2:AB:EE')
         ctrl.volume_up()
         ctrl.volume_down()
+
+
+class BTMediaTest(unittest.TestCase):
+
+    def setUp(self):
+        patcher = mock.patch('dbus.Interface', MockDBusInterface)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        patcher = mock.patch('dbus.SystemBus')
+        patched_system_bus = patcher.start()
+        self.addCleanup(patcher.stop)
+        mock_system_bus = mock.MagicMock()
+        patched_system_bus.return_value = mock_system_bus
+        mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
+
+    def test_media_endpoint(self):
+        media = bt_manager.BTMedia()
+        path = '/test/sbcaudiosink'
+        endpoint = bt_manager.BTSBCAudioSinkEndpoint(path=path)
+        media.register_endpoint(path, endpoint.get_properties())
+        media.unregister_endpoint(path)
+
+    def test_media_player(self):
+        media = bt_manager.BTMedia()
+        path = '/test/player'
+        media.register_player(path, None)
+        media.unregister_player(path)
 
 
 class BTAgentTest(unittest.TestCase):
