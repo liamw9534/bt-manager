@@ -42,18 +42,25 @@ Changelog
 v0.1.0 (UNRELEASED)
 ----------------------------------------
 
-Initial release supporting:
+Initial release supporting Bluez 4.x dbus API with following interfaces:
 
-- Bluez 4.x compatibility (via DBus)
-- List of available BT adapters
-- Select default BT adapter
-- List BT devices associated with BT adapter
-- Get BT adapter properties
-- Set BT adapter properties
-- BT device discovery and notifications
-- Get BT device properties
-- Set BT device properties
-- BT pairing agent
-- Full and shortened UUID decoding for identifying supported services
+- BTManager (org.bluez.Manager)
+- BTAdapter (org.bluez.Adapter)
+- BTDevice (org.bluez.Device)
+- BTMedia (org.bluez.Media)
+- BTMediaTransport (org.bluez.MediaTransport)
+- BTAudioSource (org.bluez.AudioSource)
+- BTAudioSink (org.bluez.AudioSink)
+
+Services:
+
+- BTAgent (org.bluez.Agent)
+- SBCAudioSink (org.bluez.MediaEndpoint): endpoint/transport setup only
+- SBCAudioSource (org.bluez.MediaEndpoint): endpoint/transport setup only
+
+Other:
+
+- UUID decoding for identifying supported services
 - Class of device decoding to device service, major and minor classes
 - Device vendors codes and names for device vendor decoding
+- Audio codec types and SBC codec configuration attributes

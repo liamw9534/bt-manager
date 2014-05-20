@@ -955,7 +955,7 @@ class BTMediaTest(unittest.TestCase):
     def test_media_endpoint(self):
         media = bt_manager.BTMedia()
         path = '/test/sbcaudiosink'
-        endpoint = bt_manager.BTSBCAudioSinkEndpoint(path=path)
+        endpoint = bt_manager.SBCAudioSink(path=path)
         media.register_endpoint(path, endpoint.get_properties())
         media.unregister_endpoint(path)
 

@@ -29,6 +29,9 @@ class BTDeviceNotSpecifiedException:
 
 
 class Signal():
+    """Encapsulation of user callback wrapper for signals
+    fired by dbus.  This allows us to prepend the signal
+    name and the user callback argument."""
     def __init__(self, signal, user_callback, user_arg):
         self.signal = signal
         self.user_callback = user_callback
@@ -38,6 +41,8 @@ class Signal():
         self.user_callback(self.signal, self.user_arg, *args)
 
 
+# This class is not intended to be instantiated directly and should be
+# sub-classed with a concrete implementation for an interface
 class BTSimpleInterface:
     """Wrapper around DBus to encapsulated a BT simple interface
     entry point (i.e., has no signals or properties)"""
@@ -48,6 +53,8 @@ class BTSimpleInterface:
         self._interface = dbus.Interface(self._object, addr)
 
 
+# This class is not intended to be instantiated directly and should be
+# sub-classed with a concrete implementation for an interface
 class BTInterface(BTSimpleInterface):
     """Wrapper around DBus to encapsulated a BT interface
     entry point e.g., an adapter, a device, etc"""
@@ -62,6 +69,8 @@ class BTInterface(BTSimpleInterface):
         self._register_signal_name(BTInterface.SIGNAL_PROPERTY_CHANGED)
 
     def _register_signal_name(self, name):
+        """Helper function to register allowed signals on this
+        instance.  Need only be called once per signal name."""
         self._signal_names.append(name)
 
     def add_signal_receiver(self, callback_fn, signal, user_arg):
@@ -88,7 +97,8 @@ class BTInterface(BTSimpleInterface):
             raise BTSignalNameNotRecognisedException
 
     def get_property(self, name=None):
-        """Helper to get a property value by name"""
+        """Helper to get a property value by name or all
+        properties as a dictionary."""
         if (name):
             return self._interface.GetProperties()[name]
         else:
@@ -119,7 +129,7 @@ class BTInterface(BTSimpleInterface):
 
     def __repr__(self):
         """Stringify the Dbus interface properties as raw"""
-        return pprint.pformat(self._interface.GetProperties())
+        return self.__str__()
 
     def __str__(self):
         """Stringify the Dbus interface properties in a nice format"""
@@ -214,6 +224,8 @@ class BTAdapter(BTInterface):
         self._interface.UnregisterAgent(path)
 
 
+# This class is not intended to be instantiated directly and should be
+# sub-classed with a concrete implementation for an interface
 class BTGenericDevice(BTInterface):
     """Generic BT device which has its own interface bus address but is
     associated with a BT adapter"""
@@ -235,42 +247,43 @@ class BTDevice(BTGenericDevice):
     """Wrapper around Dbus to encapsulate the BT device entity"""
 
     SIGNAL_DISCONNECT_REQUESTED = 'DisconnectRequested'
+    SIGNAL_NODE_CREATED = 'NodeCreated'
+    SIGNAL_NODE_REMOVED = 'NodeRemoved'
 
     def __init__(self, *args, **kwargs):
         BTGenericDevice.__init__(self, addr='org.bluez.Device',
                                  *args, **kwargs)
         self._register_signal_name(BTDevice.SIGNAL_DISCONNECT_REQUESTED)
+        self._register_signal_name(BTDevice.SIGNAL_NODE_CREATED)
+        self._register_signal_name(BTDevice.SIGNAL_NODE_REMOVED)
 
     def discover_services(self, pattern=''):
+        """This method starts the service discovery to retrieve
+        remote service records. The pattern parameter can
+        be used to specify specific UUIDs. And empty string
+        will look for the public browse group.
+        The return value is a dictionary with the record
+        handles as keys and the service record in XML format
+        as values. The key is uint32 and the value a string
+        for this dictionary.  Refer to BTDiscoveryInfo
+        to decode each XML service record"""
         return self._interface.DiscoverServices(pattern)
 
-    def disconnect(self):
-        self._interface.Disconnect()
-
-
-class BTAudioSink(BTGenericDevice):
-    """Wrapper around Dbus to encapsulate the BT audio sink entity"""
-
-    SIGNAL_CONNECTED = 'Connected'
-    SIGNAL_DISCONNECTED = 'Disconnected'
-    SIGNAL_PLAYING = 'Playing'
-    SIGNAL_STOPPED = 'Stopped'
-
-    def __init__(self, *args, **kwargs):
-        BTGenericDevice.__init__(self, addr='org.bluez.AudioSink',
-                                 *args, **kwargs)
-        self._register_signal_name(BTAudioSink.SIGNAL_CONNECTED)
-        self._register_signal_name(BTAudioSink.SIGNAL_DISCONNECTED)
-        self._register_signal_name(BTAudioSink.SIGNAL_PLAYING)
-        self._register_signal_name(BTAudioSink.SIGNAL_STOPPED)
-
-    def connect(self):
-        self._interface.Connect()
-
-    def is_connected(self):
-        return self._interface.IsConnected()
+    def cancel_discovery(self):
+        """This method will cancel any previous DiscoverServices
+        transaction."""
+        return self._interface.CancelDiscovery()
 
     def disconnect(self):
+        """This method disconnects a specific remote device by
+        terminating the low-level ACL connection. The use of
+        this method should be restricted to administrator
+        use.
+        A 'DisconnectRequested' signal will be sent and the
+        actual disconnection will only happen 2 seconds later.
+        This enables upper-level applications to terminate
+        their connections gracefully before the ACL connection
+        is terminated."""
         self._interface.Disconnect()
 
 
@@ -290,13 +303,16 @@ class BTControl(BTGenericDevice):
         return self._interface.IsConnected()
 
     def volume_up(self):
+        """Adjust remote volume one step up"""
         self._interface.VolumeUp()
 
     def volume_down(self):
+        """Adjust remote volume one step down"""
         self._interface.VolumeDown()
 
 
 class BTMedia(BTSimpleInterface):
+    """Wrapper around Dbus to encapsulate the BT media"""
     def __init__(self, adapter_id=None):
         manager = BTManager()
         if (adapter_id is None):
@@ -316,3 +332,163 @@ class BTMedia(BTSimpleInterface):
 
     def unregister_player(self, path):
         self._interface.UnregisterPlayer(path)
+
+
+class BTMediaTransport(BTInterface):
+    """Wrapper around Dbus to encapsulate the BT media transport"""
+    def __init__(self, path, fd=None, adapter_id=None,
+                 dev_path=None, dev_id=None):
+        if (not path):
+            fd_suffix = '/fd' + str(fd)
+            if (dev_path):
+                path = dev_path + fd_suffix
+            elif (dev_id):
+                if (adapter_id):
+                    adapter = BTAdapter(adapter_id)
+                else:
+                    adapter = BTAdapter()
+                    path = adapter.find_device(dev_id) + fd_suffix
+            else:
+                raise BTDeviceNotSpecifiedException
+        BTInterface.__init__(self, path, 'org.bluez.MediaTransport')
+
+    def acquire(self, access_type):
+        """Acquire transport file descriptor and the MTU for read
+        and write respectively.  Possible access_type:
+            "r" : Read only access
+            "w" : Write only access
+            "rw": Read and write access"""
+        return self._interface.Acquire(access_type)
+
+    def release(self, access_type):
+        """Releases file descriptor."""
+        return self._interface.Release(access_type)
+
+
+class BTAudio(BTGenericDevice):
+    """Wrapper around Dbus to encapsulate the BT audio entity"""
+
+    def __init__(self, *args, **kwargs):
+        BTGenericDevice.__init__(self, addr='org.bluez.Audio',
+                                 *args, **kwargs)
+
+    def connect(self):
+        """Connect all supported audio profiles on the device."""
+        self._interface.Connect()
+
+    def disconnect(self):
+        """Disconnect all audio profiles on the device"""
+        self._interface.Disconnect()
+
+
+class BTAudioSource(BTAudio):
+    """Wrapper around Dbus to encapsulate the BT audio source entity"""
+
+    def __init__(self, *args, **kwargs):
+        BTGenericDevice.__init__(self, addr='org.bluez.AudioSource',
+                                 *args, **kwargs)
+
+
+class BTAudioSink(BTAudio):
+    """Wrapper around Dbus to encapsulate the BT audio sink entity"""
+
+    SIGNAL_CONNECTED = 'Connected'
+    SIGNAL_DISCONNECTED = 'Disconnected'
+    SIGNAL_PLAYING = 'Playing'
+    SIGNAL_STOPPED = 'Stopped'
+
+    def __init__(self, *args, **kwargs):
+        BTGenericDevice.__init__(self, addr='org.bluez.AudioSink',
+                                 *args, **kwargs)
+        self._register_signal_name(BTAudioSink.SIGNAL_CONNECTED)
+        self._register_signal_name(BTAudioSink.SIGNAL_DISCONNECTED)
+        self._register_signal_name(BTAudioSink.SIGNAL_PLAYING)
+        self._register_signal_name(BTAudioSink.SIGNAL_STOPPED)
+
+    def is_connected(self):
+        """Returns TRUE if a stream is setup to a A2DP sink on
+        the remote device."""
+        return self._interface.IsConnected()
+
+
+class BTHeadset(BTAudio):
+    """Wrapper around Dbus to encapsulate the BT headset entity"""
+
+    SIGNAL_ANSWER_REQUESTED = 'AnswerRequested'
+    SIGNAL_SPEAKER_GAIN_CHANGED = 'SpeakerGainChanged'
+    SIGNAL_MICROPHONE_GAIN_CHANGED = 'MicrophoneGainChanged'
+
+    def __init__(self, *args, **kwargs):
+        BTGenericDevice.__init__(self, addr='org.bluez.Headset',
+                                 *args, **kwargs)
+        self._register_signal_name(BTAudioSink.SIGNAL_ANSWER_REQUESTED)
+        self._register_signal_name(BTAudioSink.SIGNAL_SPEAKER_GAIN_CHANGED)
+        self._register_signal_name(BTAudioSink.SIGNAL_MICROPHONE_GAIN_CHANGED)
+
+    def is_connected(self):
+        return self._interface.IsConnected()
+
+    def indicate_call(self):
+        """Indicate an incoming call on the headset
+        connected to the stream. Will continue to
+        ring the headset about every 3 seconds."""
+        return self._interface.IndicateCall()
+
+    def cancel_call(self):
+        """Cancel the incoming call indication"""
+        return self._interface.CancelCall()
+
+    def play(self):
+        """Open the audio connection to the headset"""
+        return self._interface.Play()
+
+    def stop(self):
+        """Close the audio connection"""
+        return self._interface.Stop()
+
+
+class BTHeadsetGateway(BTAudio):
+    """Wrapper around Dbus to encapsulate the BT headset
+    gateway entity"""
+
+    SIGNAL_RING = 'Ring'
+    SIGNAL_CALL_TERMINATED = 'CallTerminated'
+    SIGNAL_CALL_STARTED = 'CallStarted'
+    SIGNAL_CALL_ENDED = 'CallEnded'
+
+    def __init__(self, *args, **kwargs):
+        BTGenericDevice.__init__(self, addr='org.bluez.Headset',
+                                 *args, **kwargs)
+        self._register_signal_name(BTAudioSink.SIGNAL_RING)
+        self._register_signal_name(BTAudioSink.SIGNAL_CALL_TERMINATED)
+        self._register_signal_name(BTAudioSink.SIGNAL_CALL_STARTED)
+        self._register_signal_name(BTAudioSink.SIGNAL_CALL_ENDED)
+
+    def answer_call(self):
+        """It has to called only after Ring signal received."""
+        return self._interface.AnswerCall()
+
+    def terminate_call(self):
+        """Terminate call which is running or reject an incoming
+        call. This has nothing with any 3-way situation incl.
+        RaH. Just plain old PDH."""
+        return self._interface.TerminateCall()
+
+    def call(self, dial_number):
+        """Dial a number. No number processing is done
+        thus if AG would reject to dial it don't blame me"""
+        return self._interface.Call(dial_number)
+
+    def get_operator_name(self):
+        """Find out the name of the currently selected network
+        operator by AG."""
+        return self._interface.GetOperatorName()
+
+    def send_dtmf(self, digits):
+        """Will send each digit in the 'digits' sequentially. Would
+        send nothing if there is non-DTMF digit."""
+        return self._interface.SendDTMF(digits)
+
+    def get_subscriber_number(self):
+        """Get the voicecall subscriber number of AG"""
+        return self._interface.GetSubscriberNumber()

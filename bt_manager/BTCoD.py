@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 
 class BTCoD:
+    """Bluetooth class of device decoder"""
 
     _MAJOR_SERVICE_POS = 13
     _MAJOR_SERVICE_MASK = 0xFFE000
@@ -134,10 +135,13 @@ class BTCoD:
     }
 
     def __init__(self, cod):
+        """Initialize the class of device number for
+        subsequent decoding"""
         self.cod = cod
 
     @property
     def major_service_class(self):
+        """Return the major service class property decoded"""
         major_service = []
         for i in BTCoD._MAJOR_SERVICE_CLASS.keys():
             if (self.cod & i):
@@ -146,12 +150,14 @@ class BTCoD:
 
     @property
     def major_device_class(self):
+        """Return the major device class property decoded"""
         return BTCoD._MAJOR_DEVICE_CLASS.get(self.cod &
                                              BTCoD._MAJOR_DEVICE_MASK,
                                              'Unknown')
 
     @property
     def minor_device_class(self):
+        """Return the minor device class property decoded"""
         minor_device = []
         minor_lookup = BTCoD._MINOR_DEVICE_CLASS.get(self.cod &
                                                      BTCoD._MAJOR_DEVICE_MASK,
@@ -162,6 +168,7 @@ class BTCoD:
         return minor_device
 
     def __str__(self):
+        """Stringify all elements of the class of device"""
         return '<cod:' + str(hex(self.cod)) + ' Major Service:' + str(self.major_service_class) + \
             ' Major Device:' + \
             self.major_device_class + ' Minor Device:' + \
