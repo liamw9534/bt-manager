@@ -133,7 +133,7 @@ class BTAgent(dbus.service.Object):
             self.cb_notify_on_cancel(BTAgent.NOTIFY_ON_CANCEL)
 
 
-# GenericEndpoint can't be directly instantiated.  It hould be
+# GenericEndpoint can't be directly instantiated.  It should be
 # sub-classed and provides a template class only.
 class GenericEndpoint(dbus.service.Object):
     def __init__(self, path):
@@ -183,8 +183,8 @@ SBCCodecConfig = namedtuple('SBCCodecConfig',
 
 
 # SBCAudioCodec does not implement RTP pay/depay or SBC encode/decode.
-# It only implements the necessary parts for creating the media endpoint
-# and managing the media transport.
+# It only implements the necessary parts for creating the media endpoint,
+# negotiating the connection and establishing a media transport.
 class SBCAudioCodec(GenericEndpoint):
 
     def __init__(self, uuid, path):
@@ -464,8 +464,10 @@ class SBCAudioSource(SBCAudioCodec):
         """Handler for property change event.  We catch certain state
         transitions in order to trigger media transport
         acquisition/release"""
-        current_state = self.source.State
-        if (self.state == 'disconnected' and current_state == 'connected'):
+        current_state = self.sink.State
+        if ((self.state == 'disconnected' and current_state == 'connected') or
+            (self.state == 'connecting' and
+                current_state == 'connected')):
             self._acquire_media_transport(transport, 'w')
         elif (self.state == 'connected' and current_state == 'disconnected'):
             self._release_media_transport(transport, 'w')
