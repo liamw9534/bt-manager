@@ -6,14 +6,19 @@ import dbus.service
 import pprint
 import gobject
 import os
-from bt_manager import SERVICES, BTMediaTransport, BTAudioSource, \
-    BTAudioSink
-from bt_manager.BTCodecs import SBCAllocationMethod, SBCBlocks, \
-    SBCChannelMode, SBCSamplingFrequency, SBCSubbands, A2DP_CODECS
+import bt_manager
 
 
 class BTRejectedException(dbus.DBusException):
     _dbus_error_name = "org.bluez.Error.Rejected"
+
+
+class BTInvalidConfiguration(dbus.DBusException):
+    _dbus_error_name = "org.bluez.Error.InvalidConfiguration"
+
+
+class BTIncompatibleTransportAccessType(dbus.DBusException):
+    _dbus_error_name = "org.bluez.Error.InvalidConfiguration"
 
 
 class BTAgent(dbus.service.Object):
@@ -188,15 +193,15 @@ SBCCodecConfig = namedtuple('SBCCodecConfig',
 class SBCAudioCodec(GenericEndpoint):
 
     def __init__(self, uuid, path):
-        config = SBCCodecConfig(SBCChannelMode.ALL,
-                                SBCSamplingFrequency.ALL,
-                                SBCAllocationMethod.ALL,
-                                SBCSubbands.ALL,
-                                SBCBlocks.ALL,
+        config = SBCCodecConfig(bt_manager.SBCChannelMode.ALL,
+                                bt_manager.SBCSamplingFrequency.ALL,
+                                bt_manager.SBCAllocationMethod.ALL,
+                                bt_manager.SBCSubbands.ALL,
+                                bt_manager.SBCBlocks.ALL,
                                 2,
                                 64)
         caps = SBCAudioCodec._make_config(config)
-        codec = dbus.Byte(A2DP_CODECS['SBC'])
+        codec = dbus.Byte(bt_manager.A2DP_CODECS['SBC'])
         delayed_reporting = dbus.Boolean(True)
         self.properties = dbus.Dictionary({'UUID': uuid,
                                            'Codec': codec,
@@ -207,13 +212,13 @@ class SBCAudioCodec(GenericEndpoint):
     def read_transport(self):
         """Allow user to read data from media transport"""
         if ('r' not in self.access_type):
-            return
+            raise BTIncompatibleTransportAccessType
         return os.read(self.fd, self.write_mtu)
 
     def write_transport(self, data):
         """Allow user to write data to media transport"""
         if ('w' not in self.access_type):
-            return
+            raise BTIncompatibleTransportAccessType
         os.write(self.fd, data)
 
     def _notify_media_transport_available(self, path, transport):
@@ -224,7 +229,7 @@ class SBCAudioCodec(GenericEndpoint):
     def _acquire_media_transport(self, path, access_type):
         """Should be called by subclass when it is ready
         to acquire the media transport file descriptor"""
-        transport = BTMediaTransport(path=path)
+        transport = bt_manager.BTMediaTransport(path=path)
         (fd, write_mtu, read_mtu) = transport.acquire(access_type)
         self.fd = fd.take()   # We must do the clean-up later
         self.write_mtu = write_mtu
@@ -235,47 +240,47 @@ class SBCAudioCodec(GenericEndpoint):
         """Should be called by subclass when it is finished
         with the media transport file descriptor"""
         os.close(self.fd)   # Clean-up previously taken fd
-        transport = BTMediaTransport(path=path)
+        transport = bt_manager.BTMediaTransport(path=path)
         transport.release(access_type)
 
     @staticmethod
     def _default_bitpool(frequency, channel_mode):
         if (frequency ==
-                SBCSamplingFrequency.FREQ_16KHZ or
+                bt_manager.SBCSamplingFrequency.FREQ_16KHZ or
             frequency ==
-                SBCSamplingFrequency.FREQ_32KHZ):
+                bt_manager.SBCSamplingFrequency.FREQ_32KHZ):
             return 53
         elif (frequency ==
-                SBCSamplingFrequency.FREQ_44_1KHZ):
+                bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ):
             if (channel_mode ==
-                    SBCChannelMode.CHANNEL_MODE_MONO or
+                    bt_manager.SBCChannelMode.CHANNEL_MODE_MONO or
                 channel_mode ==
-                    SBCChannelMode.CHANNEL_MODE_DUAL):
+                    bt_manager.SBCChannelMode.CHANNEL_MODE_DUAL):
                 return 31
             elif (channel_mode ==
-                    SBCChannelMode.CHANNEL_MODE_STEREO or
+                    bt_manager.SBCChannelMode.CHANNEL_MODE_STEREO or
                   channel_mode ==
-                    SBCChannelMode.CHANNEL_MODE_JOINT_STEREO):
+                    bt_manager.SBCChannelMode.CHANNEL_MODE_JOINT_STEREO):
                 return 53
             else:
-                print('Invalid channel_mode')
+                # TODO: Invalid channel_mode
                 return 53
-        elif (frequency == SBCSamplingFrequency.FREQ_48KHZ):
+        elif (frequency == bt_manager.SBCSamplingFrequency.FREQ_48KHZ):
             if (channel_mode ==
-                    SBCChannelMode.CHANNEL_MODE_MONO or
+                    bt_manager.SBCChannelMode.CHANNEL_MODE_MONO or
                 channel_mode ==
-                    SBCChannelMode.CHANNEL_MODE_DUAL):
+                    bt_manager.SBCChannelMode.CHANNEL_MODE_DUAL):
                 return 29
             elif (channel_mode ==
-                    SBCChannelMode.CHANNEL_MODE_STEREO or
+                    bt_manager.SBCChannelMode.CHANNEL_MODE_STEREO or
                   channel_mode ==
-                    SBCChannelMode.CHANNEL_MODE_JOINT_STEREO):
+                    bt_manager.SBCChannelMode.CHANNEL_MODE_JOINT_STEREO):
                 return 51
             else:
-                print('Invalid channel_mode')
+                # TODO: Invalid channel_mode
                 return 51
         else:
-            print('Invalid frequency')
+            # TODO: Invalid frequency
             return 53
 
     @staticmethod
@@ -329,55 +334,55 @@ class SBCAudioCodec(GenericEndpoint):
         print('SelectConfiguration(%s)' % caps)
         our_caps = SBCAudioCodec._parse_config(self.properties['Capabilities'])
         device_caps = SBCAudioCodec._parse_config(caps)
-        frequency = SBCSamplingFrequency.FREQ_44_1KHZ
+        frequency = bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ
 
         if ((our_caps.channel_mode & device_caps.channel_mode) &
-                SBCChannelMode.CHANNEL_MODE_JOINT_STEREO):
-            channel_mode = SBCChannelMode.CHANNEL_MODE_JOINT_STEREO
+                bt_manager.SBCChannelMode.CHANNEL_MODE_JOINT_STEREO):
+            channel_mode = bt_manager.SBCChannelMode.CHANNEL_MODE_JOINT_STEREO
         elif ((our_caps.channel_mode & device_caps.channel_mode) &
-              SBCChannelMode.CHANNEL_MODE_STEREO):
-            channel_mode = SBCChannelMode.CHANNEL_MODE_STEREO
+              bt_manager.SBCChannelMode.CHANNEL_MODE_STEREO):
+            channel_mode = bt_manager.SBCChannelMode.CHANNEL_MODE_STEREO
         elif ((our_caps.channel_mode & device_caps.channel_mode) &
-              SBCChannelMode.CHANNEL_MODE_DUAL):
-            channel_mode = SBCChannelMode.CHANNEL_MODE_DUAL
+              bt_manager.SBCChannelMode.CHANNEL_MODE_DUAL):
+            channel_mode = bt_manager.SBCChannelMode.CHANNEL_MODE_DUAL
         elif ((our_caps.channel_mode & device_caps.channel_mode) &
-              SBCChannelMode.CHANNEL_MODE_MONO):
-            channel_mode = SBCChannelMode.CHANNEL_MODE_MONO
+              bt_manager.SBCChannelMode.CHANNEL_MODE_MONO):
+            channel_mode = bt_manager.SBCChannelMode.CHANNEL_MODE_MONO
         else:
-            print('Unable to set channel_mode')
+            raise BTInvalidConfiguration
 
         if ((our_caps.block_length & device_caps.block_length) &
-                SBCBlocks.BLOCKS_16):
-            block_length = SBCBlocks.BLOCKS_16
+                bt_manager.SBCBlocks.BLOCKS_16):
+            block_length = bt_manager.SBCBlocks.BLOCKS_16
         elif ((our_caps.block_length & device_caps.block_length) &
-              SBCBlocks.BLOCKS_12):
-            block_length = SBCBlocks.BLOCKS_12
+              bt_manager.SBCBlocks.BLOCKS_12):
+            block_length = bt_manager.SBCBlocks.BLOCKS_12
         elif ((our_caps.block_length & device_caps.block_length) &
-              SBCBlocks.BLOCKS_8):
-            block_length = SBCBlocks.BLOCKS_8
+              bt_manager.SBCBlocks.BLOCKS_8):
+            block_length = bt_manager.SBCBlocks.BLOCKS_8
         elif ((our_caps.block_length & device_caps.block_length) &
-              SBCBlocks.BLOCKS_4):
-            block_length = SBCBlocks.BLOCKS_4
+              bt_manager.SBCBlocks.BLOCKS_4):
+            block_length = bt_manager.SBCBlocks.BLOCKS_4
         else:
-            print('Unable to set block_length')
+            raise BTInvalidConfiguration
 
         if ((our_caps.subbands & device_caps.subbands) &
-                SBCSubbands.SUBBANDS_8):
-            subbands = SBCSubbands.SUBBANDS_8
+                bt_manager.SBCSubbands.SUBBANDS_8):
+            subbands = bt_manager.SBCSubbands.SUBBANDS_8
         elif ((our_caps.subbands & device_caps.subbands) &
-              SBCSubbands.SUBBANDS_4):
-            subbands = SBCSubbands.SUBBANDS_4
+              bt_manager.SBCSubbands.SUBBANDS_4):
+            subbands = bt_manager.SBCSubbands.SUBBANDS_4
         else:
-            print('Unable to set subbands')
+            raise BTInvalidConfiguration
 
         if ((our_caps.allocation_method & device_caps.allocation_method) &
-                SBCAllocationMethod.LOUDNESS):
-            allocation_method = SBCAllocationMethod.LOUDNESS
+                bt_manager.SBCAllocationMethod.LOUDNESS):
+            allocation_method = bt_manager.SBCAllocationMethod.LOUDNESS
         elif ((our_caps.allocation_method & device_caps.allocation_method) &
-              SBCAllocationMethod.SNR):
-            allocation_method = SBCAllocationMethod.SNR
+              bt_manager.SBCAllocationMethod.SNR):
+            allocation_method = bt_manager.SBCAllocationMethod.SNR
         else:
-            print('Unable to set allocation_method')
+            raise BTInvalidConfiguration
 
         min_bitpool = max(our_caps.min_bitpool, device_caps.min_bitpool)
         max_bitpool = min(SBCAudioCodec._default_bitpool(frequency,
@@ -409,8 +414,8 @@ class SBCAudioCodec(GenericEndpoint):
 class SBCAudioSink(SBCAudioCodec):
     """SBC audio sink media endpoint"""
     def __init__(self,
-                 path='test/sbcsink'):
-        uuid = dbus.String(SERVICES['AudioSink'].uuid)
+                 path='/endpoint/a2dpsink'):
+        uuid = dbus.String(bt_manager.SERVICES['AudioSink'].uuid)
         SBCAudioCodec.__init__(self, uuid, path)
 
     def _fd_ready_handler(self, fd, cb_condition):
@@ -444,10 +449,10 @@ class SBCAudioSink(SBCAudioCodec):
     def _notify_media_transport_available(self, path, transport):
         """Called by the endpoint when a new media transport is
         available"""
-        self.source = BTAudioSource(dev_path=path)
+        self.source = bt_manager.BTAudioSource(dev_path=path)
         self.state = self.source.State
         self.source.add_signal_receiver(self._property_change_event_handler,
-                                        BTAudioSource.SIGNAL_PROPERTY_CHANGED,
+                                        bt_manager.BTAudioSource.SIGNAL_PROPERTY_CHANGED,  # noqa
                                         transport)
 
 
@@ -456,8 +461,8 @@ class SBCAudioSink(SBCAudioCodec):
 class SBCAudioSource(SBCAudioCodec):
     """SBC audio source media endpoint"""
     def __init__(self,
-                 path='test/sbcsource'):
-        uuid = dbus.String(SERVICES['AudioSource'].uuid)
+                 path='/endpoint/a2dpsource'):
+        uuid = dbus.String(bt_manager.SERVICES['AudioSource'].uuid)
         SBCAudioCodec.__init__(self, uuid, path)
 
     def _property_change_event_handler(self, signal, transport, *args):
@@ -476,8 +481,8 @@ class SBCAudioSource(SBCAudioCodec):
     def _notify_media_transport_available(self, path, transport):
         """Called by the endpoint when a new media transport is
         available"""
-        self.sink = BTAudioSink(dev_path=path)
+        self.sink = bt_manager.BTAudioSink(dev_path=path)
         self.state = self.sink.State
         self.sink.add_signal_receiver(self._property_change_event_handler,
-                                      BTAudioSource.SIGNAL_PROPERTY_CHANGED,
+                                      bt_manager.BTAudioSource.SIGNAL_PROPERTY_CHANGED,  # noqa
                                       transport)

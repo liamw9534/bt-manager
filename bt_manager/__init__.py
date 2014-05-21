@@ -12,4 +12,4 @@ from bt_manager.BTDBusServiceObj import *                  # noqa
 from bt_manager.BTCoD import BTCoD                         # noqa
 from bt_manager.BTVendorId import VENDORS                  # noqa
 from bt_manager.BTDiscoveryInfo import BTDiscoveryInfo     # noqa
-from bt_manager.BTCodecs import A2DP_CODECS                # noqa
+from bt_manager.BTCodecs import *                          # noqa

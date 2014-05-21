@@ -421,9 +421,9 @@ class BTHeadset(BTAudio):
     def __init__(self, *args, **kwargs):
         BTGenericDevice.__init__(self, addr='org.bluez.Headset',
                                  *args, **kwargs)
-        self._register_signal_name(BTAudioSink.SIGNAL_ANSWER_REQUESTED)
-        self._register_signal_name(BTAudioSink.SIGNAL_SPEAKER_GAIN_CHANGED)
-        self._register_signal_name(BTAudioSink.SIGNAL_MICROPHONE_GAIN_CHANGED)
+        self._register_signal_name(BTHeadset.SIGNAL_ANSWER_REQUESTED)
+        self._register_signal_name(BTHeadset.SIGNAL_SPEAKER_GAIN_CHANGED)
+        self._register_signal_name(BTHeadset.SIGNAL_MICROPHONE_GAIN_CHANGED)
 
     def is_connected(self):
         return self._interface.IsConnected()
@@ -459,10 +459,10 @@ class BTHeadsetGateway(BTAudio):
     def __init__(self, *args, **kwargs):
         BTGenericDevice.__init__(self, addr='org.bluez.Headset',
                                  *args, **kwargs)
-        self._register_signal_name(BTAudioSink.SIGNAL_RING)
-        self._register_signal_name(BTAudioSink.SIGNAL_CALL_TERMINATED)
-        self._register_signal_name(BTAudioSink.SIGNAL_CALL_STARTED)
-        self._register_signal_name(BTAudioSink.SIGNAL_CALL_ENDED)
+        self._register_signal_name(BTHeadsetGateway.SIGNAL_RING)
+        self._register_signal_name(BTHeadsetGateway.SIGNAL_CALL_TERMINATED)
+        self._register_signal_name(BTHeadsetGateway.SIGNAL_CALL_STARTED)
+        self._register_signal_name(BTHeadsetGateway.SIGNAL_CALL_ENDED)
 
     def answer_call(self):
         """It has to called only after Ring signal received."""

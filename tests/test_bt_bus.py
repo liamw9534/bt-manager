@@ -636,6 +636,12 @@ class MockDBusInterface:
     def UnregisterPlayer(self, path):
         pass
 
+    def Acquire(self, access_mode):
+        pass
+
+    def Release(self, access_mode):
+        pass
+
     def _test_notify_device_created_ok(self):
         self._cb_notify_device('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE')  # noqa
 
@@ -1127,3 +1133,338 @@ class BTAgentTest(unittest.TestCase):
         except bt_manager.BTRejectedException:
             exception_raised = True
         self.assertTrue(exception_raised)
+
+
+class SBCAudioTest(unittest.TestCase):
+
+    @mock.patch('dbus.SystemBus')
+    def test_sbc_caps_conversion(self, patched_system_bus):
+
+        mock_system_bus = mock.MagicMock()
+        patched_system_bus.return_value = mock_system_bus
+        mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
+
+        media = bt_manager.SBCAudioCodec(uuid='uuid', path='/endpoint/test')
+        config = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.ALL,
+                                           bt_manager.SBCSamplingFrequency.ALL,
+                                           bt_manager.SBCAllocationMethod.ALL,
+                                           bt_manager.SBCSubbands.ALL,
+                                           bt_manager.SBCBlocks.ALL,
+                                           2,
+                                           64)
+        dbus_config = media._make_config(config)
+        self.assertEqual(dbus_config, dbus.Array([dbus.Byte(0xFF),
+                                                  dbus.Byte(0xFF),
+                                                  dbus.Byte(2),
+                                                  dbus.Byte(64)]))
+        self.assertEqual(media._parse_config(dbus_config), config)
+
+    def test_sbc_default_bitpool(self):
+
+        frequency = bt_manager.SBCSamplingFrequency.FREQ_16KHZ
+        channel_mode = 0   # Don't care
+        bitpool = bt_manager.SBCAudioCodec._default_bitpool(frequency,
+                                                            channel_mode)
+        self.assertEqual(bitpool, 53)
+
+        frequency = bt_manager.SBCSamplingFrequency.FREQ_32KHZ
+        channel_mode = 0   # Don't care
+        bitpool = bt_manager.SBCAudioCodec._default_bitpool(frequency,
+                                                            channel_mode)
+        self.assertEqual(bitpool, 53)
+
+        frequency = bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ
+        channel_mode = bt_manager.SBCChannelMode.CHANNEL_MODE_MONO
+        bitpool = bt_manager.SBCAudioCodec._default_bitpool(frequency,
+                                                            channel_mode)
+        self.assertEqual(bitpool, 31)
+
+        frequency = bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ
+        channel_mode = bt_manager.SBCChannelMode.CHANNEL_MODE_DUAL
+        bitpool = bt_manager.SBCAudioCodec._default_bitpool(frequency,
+                                                            channel_mode)
+        self.assertEqual(bitpool, 31)
+
+        frequency = bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ
+        channel_mode = bt_manager.SBCChannelMode.CHANNEL_MODE_JOINT_STEREO
+        bitpool = bt_manager.SBCAudioCodec._default_bitpool(frequency,
+                                                            channel_mode)
+        self.assertEqual(bitpool, 53)
+
+        frequency = bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ
+        channel_mode = bt_manager.SBCChannelMode.CHANNEL_MODE_STEREO
+        bitpool = bt_manager.SBCAudioCodec._default_bitpool(frequency,
+                                                            channel_mode)
+        self.assertEqual(bitpool, 53)
+
+        frequency = bt_manager.SBCSamplingFrequency.FREQ_48KHZ
+        channel_mode = bt_manager.SBCChannelMode.CHANNEL_MODE_STEREO
+        bitpool = bt_manager.SBCAudioCodec._default_bitpool(frequency,
+                                                            channel_mode)
+        self.assertEqual(bitpool, 51)
+
+        frequency = bt_manager.SBCSamplingFrequency.FREQ_48KHZ
+        channel_mode = bt_manager.SBCChannelMode.CHANNEL_MODE_JOINT_STEREO
+        bitpool = bt_manager.SBCAudioCodec._default_bitpool(frequency,
+                                                            channel_mode)
+        self.assertEqual(bitpool, 51)
+
+        frequency = bt_manager.SBCSamplingFrequency.FREQ_48KHZ
+        channel_mode = bt_manager.SBCChannelMode.CHANNEL_MODE_MONO
+        bitpool = bt_manager.SBCAudioCodec._default_bitpool(frequency,
+                                                            channel_mode)
+        self.assertEqual(bitpool, 29)
+
+        frequency = bt_manager.SBCSamplingFrequency.FREQ_48KHZ
+        channel_mode = bt_manager.SBCChannelMode.CHANNEL_MODE_DUAL
+        bitpool = bt_manager.SBCAudioCodec._default_bitpool(frequency,
+                                                            channel_mode)
+        self.assertEqual(bitpool, 29)
+
+        frequency = -1     # Out of range
+        channel_mode = -1  # Out of range
+        bitpool = bt_manager.SBCAudioCodec._default_bitpool(frequency,
+                                                            channel_mode)
+        self.assertEqual(bitpool, 53)
+
+    @mock.patch('dbus.SystemBus')
+    def test_sbc_caps_negotiation(self, patched_system_bus):
+        mock_system_bus = mock.MagicMock()
+        patched_system_bus.return_value = mock_system_bus
+        mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
+
+        media = bt_manager.SBCAudioSource()
+        caps = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.ALL,
+                                         bt_manager.SBCSamplingFrequency.ALL,
+                                         bt_manager.SBCAllocationMethod.ALL,
+                                         bt_manager.SBCSubbands.ALL,
+                                         bt_manager.SBCBlocks.ALL,
+                                         2,
+                                         64)
+        expected = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_JOINT_STEREO,  # noqa
+                                             bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
+                                             bt_manager.SBCAllocationMethod.LOUDNESS,  # noqa
+                                             bt_manager.SBCSubbands.SUBBANDS_8,
+                                             bt_manager.SBCBlocks.BLOCKS_16,
+                                             2,
+                                             53)
+        dbus_caps = media._make_config(caps)
+        expected_dbus = media._make_config(expected)
+        actual_dbus = media.SelectConfiguration(dbus_caps)
+        self.assertEqual(actual_dbus, expected_dbus)
+
+        caps = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_MONO,  # noqa
+                                         bt_manager.SBCSamplingFrequency.FREQ_48KHZ,  # noqa
+                                         bt_manager.SBCAllocationMethod.SNR,
+                                         bt_manager.SBCSubbands.SUBBANDS_4,
+                                         bt_manager.SBCBlocks.BLOCKS_12,
+                                         2,
+                                         64)
+        expected = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_MONO,  # noqa
+                                             bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
+                                             bt_manager.SBCAllocationMethod.SNR,  # noqa
+                                             bt_manager.SBCSubbands.SUBBANDS_4,
+                                             bt_manager.SBCBlocks.BLOCKS_12,
+                                             2,
+                                             31)
+        dbus_caps = media._make_config(caps)
+        expected_dbus = media._make_config(expected)
+        actual_dbus = media.SelectConfiguration(dbus_caps)
+        self.assertEqual(actual_dbus, expected_dbus)
+
+        caps = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_DUAL,  # noqa
+                                         bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
+                                         bt_manager.SBCAllocationMethod.LOUDNESS,  # noqa
+                                         bt_manager.SBCSubbands.SUBBANDS_8,
+                                         bt_manager.SBCBlocks.BLOCKS_8,
+                                         2,
+                                         64)
+        expected = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_DUAL,  # noqa
+                                             bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
+                                             bt_manager.SBCAllocationMethod.LOUDNESS,  # noqa
+                                             bt_manager.SBCSubbands.SUBBANDS_8,
+                                             bt_manager.SBCBlocks.BLOCKS_8,
+                                             2,
+                                             31)
+        dbus_caps = media._make_config(caps)
+        expected_dbus = media._make_config(expected)
+        actual_dbus = media.SelectConfiguration(dbus_caps)
+        self.assertEqual(actual_dbus, expected_dbus)
+
+        caps = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_STEREO,  # noqa
+                                         bt_manager.SBCSamplingFrequency.FREQ_32KHZ,  # noqa
+                                         bt_manager.SBCAllocationMethod.ALL,
+                                         bt_manager.SBCSubbands.SUBBANDS_8,
+                                         bt_manager.SBCBlocks.BLOCKS_4,
+                                         2,
+                                         64)
+        expected = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_STEREO,  # noqa
+                                             bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
+                                             bt_manager.SBCAllocationMethod.LOUDNESS,  # noqa
+                                             bt_manager.SBCSubbands.SUBBANDS_8,
+                                             bt_manager.SBCBlocks.BLOCKS_4,
+                                             2,
+                                             53)
+        dbus_caps = media._make_config(caps)
+        expected_dbus = media._make_config(expected)
+        actual_dbus = media.SelectConfiguration(dbus_caps)
+        self.assertEqual(actual_dbus, expected_dbus)
+
+    @mock.patch('os.write')
+    @mock.patch('os.close')
+    @mock.patch('dbus.SystemBus')
+    @mock.patch('bt_manager.BTAudioSink')
+    @mock.patch('bt_manager.BTMediaTransport')
+    def test_sbc_audio_source(self, patched_transport, patched_audio,
+                              patched_system_bus, mock_close, mock_write):
+
+        mock_system_bus = mock.MagicMock()
+        patched_system_bus.return_value = mock_system_bus
+        mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
+
+        mock_audio = mock.MagicMock()
+        patched_audio.return_value = mock_audio
+        mock_audio.State = 'disconnected'
+
+        mock_transport = mock.MagicMock()
+        patched_transport.return_value = mock_transport
+
+        media = bt_manager.SBCAudioSource()
+        caps = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.ALL,
+                                         bt_manager.SBCSamplingFrequency.ALL,
+                                         bt_manager.SBCAllocationMethod.ALL,
+                                         bt_manager.SBCSubbands.ALL,
+                                         bt_manager.SBCBlocks.ALL,
+                                         2,
+                                         64)
+        dbus_caps = media._make_config(caps)
+        transport = dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE/fd0')  # noqa
+        config = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_JOINT_STEREO,  # noqa
+                                           bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
+                                           bt_manager.SBCAllocationMethod.LOUDNESS,  # noqa
+                                           bt_manager.SBCSubbands.SUBBANDS_8,
+                                           bt_manager.SBCBlocks.BLOCKS_16,
+                                           2,
+                                           53)
+        dbus_config = dbus.Dictionary({'Device': dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE'),  # noqa
+                                       'Configuration': media._make_config(config)})  # noqa
+        media.SelectConfiguration(dbus_caps)
+        media.SetConfiguration(transport, dbus_config)
+        mock_audio.add_signal_receiver.assert_called_once_with(media._property_change_event_handler,  # noqa
+                                                               bt_manager.BTAudioSource.SIGNAL_PROPERTY_CHANGED,  # noqa
+                                                               transport)
+
+        fd_value = 12
+        read_mtu = 111
+        write_mtu = 222
+        fd = mock.MagicMock()
+        fd.take.return_value = fd_value
+        mock_transport.acquire.return_value = (fd, write_mtu, read_mtu)
+
+        mock_audio.State = 'connecting'
+        media._property_change_event_handler('State',
+                                             transport, mock_audio.State)
+        mock_audio.State = 'connected'
+        media._property_change_event_handler('State',
+                                             transport, mock_audio.State)
+        mock_transport.acquire.assert_called_once_with('w')
+        mock_audio.State = 'disconnected'
+
+        data = 'dummy data'
+        media.write_transport(data)
+        mock_write.assert_called_once_with(fd_value, data)
+
+        try:
+            exception_caught = False
+            media.read_transport()
+        except bt_manager.BTIncompatibleTransportAccessType:
+            exception_caught = True
+        self.assertTrue(exception_caught)
+
+        media._property_change_event_handler('State', transport,
+                                             mock_audio.State)
+        mock_transport.release.assert_called_once_with('w')
+        mock_close.assert_called_with(fd_value)
+
+        media.ClearConfiguration()
+        media.Release()
+
+    @mock.patch('os.read')
+    @mock.patch('os.close')
+    @mock.patch('dbus.SystemBus')
+    @mock.patch('bt_manager.BTAudioSource')
+    @mock.patch('bt_manager.BTMediaTransport')
+    def test_sbc_audio_sink(self, patched_transport, patched_audio,
+                            patched_system_bus, mock_close, mock_read):
+
+        mock_system_bus = mock.MagicMock()
+        patched_system_bus.return_value = mock_system_bus
+        mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
+
+        mock_audio = mock.MagicMock()
+        patched_audio.return_value = mock_audio
+        mock_audio.State = 'disconnected'
+
+        mock_transport = mock.MagicMock()
+        patched_transport.return_value = mock_transport
+
+        media = bt_manager.SBCAudioSink()
+        caps = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.ALL,
+                                         bt_manager.SBCSamplingFrequency.ALL,
+                                         bt_manager.SBCAllocationMethod.ALL,
+                                         bt_manager.SBCSubbands.ALL,
+                                         bt_manager.SBCBlocks.ALL,
+                                         2,
+                                         64)
+        dbus_caps = media._make_config(caps)
+        transport = dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE/fd0')  # noqa
+        config = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_JOINT_STEREO,  # noqa
+                                           bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
+                                           bt_manager.SBCAllocationMethod.LOUDNESS,  # noqa
+                                           bt_manager.SBCSubbands.SUBBANDS_8,
+                                           bt_manager.SBCBlocks.BLOCKS_16,
+                                           2,
+                                           53)
+        dbus_config = dbus.Dictionary({'Device': dbus.ObjectPath('/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE'),  # noqa
+                                       'Configuration': media._make_config(config)})  # noqa
+        media.SelectConfiguration(dbus_caps)
+        media.SetConfiguration(transport, dbus_config)
+        mock_audio.add_signal_receiver.assert_called_once_with(media._property_change_event_handler,  # noqa
+                                                               bt_manager.BTAudioSource.SIGNAL_PROPERTY_CHANGED,  # noqa
+                                                               transport)
+
+        fd_value = 12
+        read_mtu = 111
+        write_mtu = 222
+        fd = mock.MagicMock()
+        fd.take.return_value = fd_value
+        mock_transport.acquire.return_value = (fd, write_mtu, read_mtu)
+
+        mock_audio.State = 'connected'
+        media._property_change_event_handler('State',
+                                             transport, mock_audio.State)
+        mock_audio.State = 'playing'
+        media._property_change_event_handler('State',
+                                             transport, mock_audio.State)
+        mock_transport.acquire.assert_called_once_with('r')
+        mock_audio.State = 'connected'
+
+        mock_read.return_value = 'dummy data'
+        data = media.read_transport()
+        mock_read.assert_called_once_with(fd_value, write_mtu)
+        self.assertEqual(data, mock_read.return_value)
+
+        try:
+            exception_caught = False
+            media.write_transport('dummy data')
+        except bt_manager.BTIncompatibleTransportAccessType:
+            exception_caught = True
+        self.assertTrue(exception_caught)
+
+        media._property_change_event_handler('State', transport,
+                                             mock_audio.State)
+        mock_transport.release.assert_called_once_with('r')
+        mock_close.assert_called_with(fd_value)
+
+        media.ClearConfiguration()
+        media.Release()
