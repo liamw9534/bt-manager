@@ -28,4 +28,3 @@ class BTIncompatibleTransportAccessType(dbus.DBusException):
 
 class BTUUIDNotSpecifiedException:
     pass
-

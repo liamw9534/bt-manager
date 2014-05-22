@@ -5,14 +5,15 @@ import gobject
 import pprint
 import os
 
-from collections import namedtuple
 from device import BTGenericDevice
 from media import GenericEndpoint, BTMediaTransport
 from codecs import SBCChannelMode, SBCSamplingFrequency, \
-    SBCAllocationMethod, SBCSubbands, SBCBlocks, A2DP_CODECS
+    SBCAllocationMethod, SBCSubbands, SBCBlocks, A2DP_CODECS, \
+    SBCCodecConfig
 from serviceuuids import SERVICES
 from exceptions import BTIncompatibleTransportAccessType, \
     BTInvalidConfiguration
+
 
 class BTAudio(BTGenericDevice):
     """Wrapper around Dbus to encapsulate the BT audio entity"""
@@ -58,12 +59,6 @@ class BTAudioSink(BTAudio):
         """Returns TRUE if a stream is setup to a A2DP sink on
         the remote device."""
         return self._interface.IsConnected()
-
-
-SBCCodecConfig = namedtuple('SBCCodecConfig',
-                            'channel_mode frequency allocation_method '
-                            'subbands block_length min_bitpool '
-                            'max_bitpool')
 
 
 # SBCAudioCodec does not implement RTP pay/depay or SBC encode/decode.

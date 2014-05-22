@@ -1,11 +1,16 @@
 from __future__ import unicode_literals
-
+from collections import namedtuple
 
 A2DP_CODECS = {'SBC': 0x00,
                'MPEG12': 0x01,
                'MPEG24': 0x02,
                'ATRAC': 0x03,
                }
+
+SBCCodecConfig = namedtuple('SBCCodecConfig',
+                            'channel_mode frequency allocation_method '
+                            'subbands block_length min_bitpool '
+                            'max_bitpool')
 
 
 class SBCSamplingFrequency:

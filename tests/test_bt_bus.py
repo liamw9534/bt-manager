@@ -655,26 +655,26 @@ class BTDbusTypeTranslation(unittest.TestCase):
     def test_all(self):
 
         val = [1, 2, 3, 4, 5]
-        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.Array, val),
+        self.assertEqual(bt_manager.interface.translate_to_dbus_type(dbus.Array, val),  # noqa
                          dbus.Array(val))
         val = -1
-        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.Int32, val),
+        self.assertEqual(bt_manager.interface.translate_to_dbus_type(dbus.Int32, val),  # noqa
                          dbus.Int32(val))
         val = 1
-        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.UInt32, val),
+        self.assertEqual(bt_manager.interface.translate_to_dbus_type(dbus.UInt32, val),  # noqa
                          dbus.UInt32(val))
         val = 'Test'
-        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.String, val),
+        self.assertEqual(bt_manager.interface.translate_to_dbus_type(dbus.String, val),  # noqa
                          dbus.String(val))
         val = {'Hello': 1}
-        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.Dictionary,
+        self.assertEqual(bt_manager.interface.translate_to_dbus_type(dbus.Dictionary,  # noqa
                                                            val),
                          dbus.Dictionary(val))
         val = 'True'
-        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.Boolean, val),
+        self.assertEqual(bt_manager.interface.translate_to_dbus_type(dbus.Boolean, val),  # noqa
                          dbus.Boolean(True))
         val = 'False'
-        self.assertEqual(bt_manager.translate_to_dbus_type(dbus.Boolean, val),
+        self.assertEqual(bt_manager.interface.translate_to_dbus_type(dbus.Boolean, val),  # noqa
                          dbus.Boolean(False))
 
 
@@ -1234,18 +1234,18 @@ class SBCAudioTest(unittest.TestCase):
         mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
 
         media = bt_manager.SBCAudioSource()
-        caps = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.ALL,
-                                         bt_manager.SBCSamplingFrequency.ALL,
-                                         bt_manager.SBCAllocationMethod.ALL,
-                                         bt_manager.SBCSubbands.ALL,
-                                         bt_manager.SBCBlocks.ALL,
+        caps = bt_manager.SBCCodecConfig(bt_manager.codecs.SBCChannelMode.ALL,
+                                         bt_manager.codecs.SBCSamplingFrequency.ALL,  # noqa
+                                         bt_manager.codecs.SBCAllocationMethod.ALL,  # noqa
+                                         bt_manager.codecs.SBCSubbands.ALL,
+                                         bt_manager.codecs.SBCBlocks.ALL,
                                          2,
                                          64)
-        expected = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_JOINT_STEREO,  # noqa
-                                             bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
-                                             bt_manager.SBCAllocationMethod.LOUDNESS,  # noqa
-                                             bt_manager.SBCSubbands.SUBBANDS_8,
-                                             bt_manager.SBCBlocks.BLOCKS_16,
+        expected = bt_manager.SBCCodecConfig(bt_manager.codecs.SBCChannelMode.CHANNEL_MODE_JOINT_STEREO,  # noqa
+                                             bt_manager.codecs.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
+                                             bt_manager.codecs.SBCAllocationMethod.LOUDNESS,  # noqa
+                                             bt_manager.codecs.SBCSubbands.SUBBANDS_8,  # noqa
+                                             bt_manager.codecs.SBCBlocks.BLOCKS_16,  # noqa
                                              2,
                                              53)
         dbus_caps = media._make_config(caps)
@@ -1253,18 +1253,18 @@ class SBCAudioTest(unittest.TestCase):
         actual_dbus = media.SelectConfiguration(dbus_caps)
         self.assertEqual(actual_dbus, expected_dbus)
 
-        caps = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_MONO,  # noqa
-                                         bt_manager.SBCSamplingFrequency.FREQ_48KHZ,  # noqa
-                                         bt_manager.SBCAllocationMethod.SNR,
-                                         bt_manager.SBCSubbands.SUBBANDS_4,
-                                         bt_manager.SBCBlocks.BLOCKS_12,
+        caps = bt_manager.SBCCodecConfig(bt_manager.codecs.SBCChannelMode.CHANNEL_MODE_MONO,  # noqa
+                                         bt_manager.codecs.SBCSamplingFrequency.FREQ_48KHZ,  # noqa
+                                         bt_manager.codecs.SBCAllocationMethod.SNR,  # noqa
+                                         bt_manager.codecs.SBCSubbands.SUBBANDS_4,  # noqa
+                                         bt_manager.codecs.SBCBlocks.BLOCKS_12,
                                          2,
                                          64)
-        expected = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_MONO,  # noqa
-                                             bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
-                                             bt_manager.SBCAllocationMethod.SNR,  # noqa
-                                             bt_manager.SBCSubbands.SUBBANDS_4,
-                                             bt_manager.SBCBlocks.BLOCKS_12,
+        expected = bt_manager.SBCCodecConfig(bt_manager.codecs.SBCChannelMode.CHANNEL_MODE_MONO,  # noqa
+                                             bt_manager.codecs.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
+                                             bt_manager.codecs.SBCAllocationMethod.SNR,  # noqa
+                                             bt_manager.codecs.SBCSubbands.SUBBANDS_4,  # noqa
+                                             bt_manager.codecs.SBCBlocks.BLOCKS_12,  # noqa
                                              2,
                                              31)
         dbus_caps = media._make_config(caps)
@@ -1272,18 +1272,18 @@ class SBCAudioTest(unittest.TestCase):
         actual_dbus = media.SelectConfiguration(dbus_caps)
         self.assertEqual(actual_dbus, expected_dbus)
 
-        caps = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_DUAL,  # noqa
-                                         bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
-                                         bt_manager.SBCAllocationMethod.LOUDNESS,  # noqa
-                                         bt_manager.SBCSubbands.SUBBANDS_8,
-                                         bt_manager.SBCBlocks.BLOCKS_8,
+        caps = bt_manager.SBCCodecConfig(bt_manager.codecs.SBCChannelMode.CHANNEL_MODE_DUAL,  # noqa
+                                         bt_manager.codecs.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
+                                         bt_manager.codecs.SBCAllocationMethod.LOUDNESS,  # noqa
+                                         bt_manager.codecs.SBCSubbands.SUBBANDS_8,  # noqa
+                                         bt_manager.codecs.SBCBlocks.BLOCKS_8,
                                          2,
                                          64)
-        expected = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_DUAL,  # noqa
-                                             bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
-                                             bt_manager.SBCAllocationMethod.LOUDNESS,  # noqa
-                                             bt_manager.SBCSubbands.SUBBANDS_8,
-                                             bt_manager.SBCBlocks.BLOCKS_8,
+        expected = bt_manager.SBCCodecConfig(bt_manager.codecs.SBCChannelMode.CHANNEL_MODE_DUAL,  # noqa
+                                             bt_manager.codecs.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
+                                             bt_manager.codecs.SBCAllocationMethod.LOUDNESS,  # noqa
+                                             bt_manager.codecs.SBCSubbands.SUBBANDS_8,  # noqa
+                                             bt_manager.codecs.SBCBlocks.BLOCKS_8,  # noqa
                                              2,
                                              31)
         dbus_caps = media._make_config(caps)
@@ -1291,18 +1291,18 @@ class SBCAudioTest(unittest.TestCase):
         actual_dbus = media.SelectConfiguration(dbus_caps)
         self.assertEqual(actual_dbus, expected_dbus)
 
-        caps = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_STEREO,  # noqa
-                                         bt_manager.SBCSamplingFrequency.FREQ_32KHZ,  # noqa
-                                         bt_manager.SBCAllocationMethod.ALL,
-                                         bt_manager.SBCSubbands.SUBBANDS_8,
-                                         bt_manager.SBCBlocks.BLOCKS_4,
+        caps = bt_manager.SBCCodecConfig(bt_manager.codecs.SBCChannelMode.CHANNEL_MODE_STEREO,  # noqa
+                                         bt_manager.codecs.SBCSamplingFrequency.FREQ_32KHZ,  # noqa
+                                         bt_manager.codecs.SBCAllocationMethod.ALL,  # noqa
+                                         bt_manager.codecs.SBCSubbands.SUBBANDS_8,  # noqa
+                                         bt_manager.codecs.SBCBlocks.BLOCKS_4,
                                          2,
                                          64)
-        expected = bt_manager.SBCCodecConfig(bt_manager.SBCChannelMode.CHANNEL_MODE_STEREO,  # noqa
-                                             bt_manager.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
-                                             bt_manager.SBCAllocationMethod.LOUDNESS,  # noqa
-                                             bt_manager.SBCSubbands.SUBBANDS_8,
-                                             bt_manager.SBCBlocks.BLOCKS_4,
+        expected = bt_manager.SBCCodecConfig(bt_manager.codecs.SBCChannelMode.CHANNEL_MODE_STEREO,  # noqa
+                                             bt_manager.codecs.SBCSamplingFrequency.FREQ_44_1KHZ,  # noqa
+                                             bt_manager.codecs.SBCAllocationMethod.LOUDNESS,  # noqa
+                                             bt_manager.codecs.SBCSubbands.SUBBANDS_8,  # noqa
+                                             bt_manager.codecs.SBCBlocks.BLOCKS_4,  # noqa
                                              2,
                                              53)
         dbus_caps = media._make_config(caps)
@@ -1313,8 +1313,8 @@ class SBCAudioTest(unittest.TestCase):
     @mock.patch('os.write')
     @mock.patch('os.close')
     @mock.patch('dbus.SystemBus')
-    @mock.patch('bt_manager.BTAudioSink')
-    @mock.patch('bt_manager.BTMediaTransport')
+    @mock.patch('bt_manager.audio.BTAudioSink')
+    @mock.patch('bt_manager.audio.BTMediaTransport')
     def test_sbc_audio_source(self, patched_transport, patched_audio,
                               patched_system_bus, mock_close, mock_write):
 
@@ -1324,6 +1324,7 @@ class SBCAudioTest(unittest.TestCase):
 
         mock_audio = mock.MagicMock()
         patched_audio.return_value = mock_audio
+        patched_audio.SIGNAL_PROPERTY_CHANGED = 'PropertyChanged'
         mock_audio.State = 'disconnected'
 
         mock_transport = mock.MagicMock()
@@ -1351,7 +1352,7 @@ class SBCAudioTest(unittest.TestCase):
         media.SelectConfiguration(dbus_caps)
         media.SetConfiguration(transport, dbus_config)
         mock_audio.add_signal_receiver.assert_called_once_with(media._property_change_event_handler,  # noqa
-                                                               bt_manager.BTAudioSource.SIGNAL_PROPERTY_CHANGED,  # noqa
+                                                               bt_manager.BTAudioSink.SIGNAL_PROPERTY_CHANGED,  # noqa
                                                                transport)
 
         fd_value = 12
@@ -1392,8 +1393,8 @@ class SBCAudioTest(unittest.TestCase):
     @mock.patch('os.read')
     @mock.patch('os.close')
     @mock.patch('dbus.SystemBus')
-    @mock.patch('bt_manager.BTAudioSource')
-    @mock.patch('bt_manager.BTMediaTransport')
+    @mock.patch('bt_manager.audio.BTAudioSource')
+    @mock.patch('bt_manager.audio.BTMediaTransport')
     def test_sbc_audio_sink(self, patched_transport, patched_audio,
                             patched_system_bus, mock_close, mock_read):
 
@@ -1403,6 +1404,7 @@ class SBCAudioTest(unittest.TestCase):
 
         mock_audio = mock.MagicMock()
         patched_audio.return_value = mock_audio
+        patched_audio.SIGNAL_PROPERTY_CHANGED = 'PropertyChanged'
         mock_audio.State = 'disconnected'
 
         mock_transport = mock.MagicMock()
@@ -1430,7 +1432,7 @@ class SBCAudioTest(unittest.TestCase):
         media.SelectConfiguration(dbus_caps)
         media.SetConfiguration(transport, dbus_config)
         mock_audio.add_signal_receiver.assert_called_once_with(media._property_change_event_handler,  # noqa
-                                                               bt_manager.BTAudioSource.SIGNAL_PROPERTY_CHANGED,  # noqa
+                                                               'PropertyChanged',  # noqa
                                                                transport)
 
         fd_value = 12

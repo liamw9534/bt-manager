@@ -5,62 +5,193 @@ from manager import BTManager
 
 
 class BTAdapter(BTInterface):
-    """Wrapper around Dbus to encapsulate the BT adapter entity"""
+    """
+    Wrapper around dbus to encapsulate org.bluez.adapter interface.
+
+    :param str adapter_path: Object path to bluetooth adapter.
+        If not given, can use adapter_id instead.
+    :param str adapter_id: Adapter's MAC address to look-up to find
+        path e.g., '11:22:33:44:55:66'
+
+    See also: See also :py:class:`adapter.BTManager`
+    """
 
     SIGNAL_DEVICE_FOUND = 'DeviceFound'
+    """
+    :function signal(signal_name, user_arg, device_path): Signal notifying
+        when a new device has been found
+    """
     SIGNAL_DEVICE_REMOVED = 'DeviceRemoved'
+    """
+    :function signal(signal_name, user_arg, device_path): Signal notifying
+        when a device has been removed
+    """
     SIGNAL_DEVICE_CREATED = 'DeviceCreated'
+    """
+    :function signal(signal_name, user_arg, device_path): Signal notifying
+        when a new device is created
+    """
     SIGNAL_DEVICE_DISAPPEARED = 'DeviceDisappeared'
+    """
+    :function signal(signal_name, user_arg, device_path): Signal notifying
+        when a device is now out-of-range
+    """
 
-    def __init__(self, adapter_id=None):
+    def __init__(self, adapter_path=None, adapter_id=None):
         manager = BTManager()
-        if (adapter_id is None):
-            adapter_path = manager.default_adapter()
-        else:
-            adapter_path = manager.find_adapter(adapter_id)
+        if (adapter_path is None):
+            if (adapter_id is None):
+                adapter_path = manager.default_adapter()
+            else:
+                adapter_path = manager.find_adapter(adapter_id)
         BTInterface.__init__(self, adapter_path, 'org.bluez.Adapter')
         self._register_signal_name(BTAdapter.SIGNAL_DEVICE_FOUND)
         self._register_signal_name(BTAdapter.SIGNAL_DEVICE_REMOVED)
         self._register_signal_name(BTAdapter.SIGNAL_DEVICE_CREATED)
         self._register_signal_name(BTAdapter.SIGNAL_DEVICE_DISAPPEARED)
-        self._register_signal_name(BTAdapter.SIGNAL_PROPERTY_CHANGED)
 
     def start_discovery(self):
-        """Start device discovery which will signal
-        events on installed notifiers"""
+        """
+        This method starts the device discovery session. This
+        includes an inquiry procedure and remote device name
+        resolving. Use :py:meth:`stop_discovery` to release the sessions
+        acquired.
+
+        This process will start emitting :py:attr:`SIGNAL_DEVICE_FOUND`
+        and :py:attr:`.SIGNAL_PROPERTY_CHANGED` 'discovering' signals.
+
+        :raises dbus.Exception: org.bluez.Error.NotReady
+        :raises dbus.Exception: org.bluez.Error.Failed
+        """
         return self._interface.StartDiscovery()
 
     def stop_discovery(self):
-        """Stop a previously started device discovery"""
+        """
+        This method will cancel any previous py:meth:`start_discovery`
+        transaction.
+
+        Note that a discovery procedure is shared between all
+        discovery sessions thus calling py:meth:`stop_discovery` will
+        only release a single session.
+
+        :raises dbus.Exception: org.bluez.Error.NotReady
+        :raises dbus.Exception: org.bluez.Error.Failed
+        :raises dbus.Exception: org.bluez.Error.NotAuthorized
+        """
         return self._interface.StopDiscovery()
 
     def find_device(self, dev_id):
-        """Find a device by its MAC address e.g., 11:22:33:44:55:66"""
+        """
+        Returns the object path of device for given address.
+        The device object needs to be first created via
+        :py:meth:`create_device` or
+        :py:meth:`created_paired_device`
+
+        :param str dev_id: Device MAC address to look-up e.g.,
+            '11:22:33:44:55:66'
+        :return: Device object path e.g.,
+            '/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE'
+        :rtype: str
+        :raises dbus.Exception: org.bluez.Error.DoesNotExist
+        :raises dbus.Exception: org.bluez.Error.InvalidArguments
+        """
         return self._interface.FindDevice(dev_id)
 
     def list_devices(self):
-        """List all registered BT devices by their DBus object path"""
+        """
+        Returns list of device object paths.
+
+        :return: List of device object paths
+        :rtype: list
+        :raises dbus.Exception: org.bluez.Error.InvalidArguments
+        :raises dbus.Exception: org.bluez.Error.Failed
+        :raises dbus.Exception: org.bluez.Error.OutOfMemory
+        """
         return self._interface.ListDevices()
 
     def create_paired_device(self, dev_id, agent_path,
-                             caps, cb_notify_device, cb_notify_error):
-        """Create a new paired device entry for this adapter by
-        device MAC address using the provided agent path"""
+                             capability, cb_notify_device, cb_notify_error):
+        """
+        Creates a new object path for a remote device. This
+        method will connect to the remote device and retrieve
+        all SDP records and then initiate the pairing.
+
+        If a previously create_device was used successfully,
+        this method will only initiate the pairing.
+
+        Compared to create_device this method will fail if
+        the pairing already exists, but not if the object
+        path already has been created. This allows applications
+        to use create_device first and then, if needed, use
+        create_paired_device to initiate pairing.
+
+        The agent object path is assumed to reside within the
+        process (D-Bus connection instance) that calls this
+        method. No separate registration procedure is needed
+        for it and it gets automatically released once the
+        pairing operation is complete.
+
+        :param str dev_id: New device MAC address create
+            e.g., '11:22:33:44:55:66'
+        :param str agent_path: Path used when creating the
+            bluetooth agent e.g., '/test/agent'
+        :param str capability: Pairing agent capability
+            e.g., 'DisplayYesNo', etc
+        :param func cb_notify_device: Callback on success.  The
+            callback is called with the new device's object
+            path as an argument.
+        :param func cb_notify_error: Callback on error.  The
+            callback is called with the error reason.
+        :return:
+        :raises dbus.Exception: org.bluez.Error.InvalidArguments
+        :raises dbus.Exception: org.bluez.Error.Failed
+        """
         return self._interface.CreatePairedDevice(dev_id,
                                                   agent_path,
-                                                  caps,
+                                                  capability,
                                                   reply_handler=cb_notify_device,  # noqa
                                                   error_handler=cb_notify_error)   # noqa
 
     def remove_device(self, dev_path):
-        """Remove an existing paired device entry on this adapter
-        by device path"""
+        """
+        This removes the remote device object at the given
+        path. It will remove also the pairing information.
+
+        :param str dev_path: Device object path to remove
+            e.g., '/org/bluez/985/hci0/dev_00_11_67_D2_AB_EE'
+        :raises dbus.Exception: org.bluez.Error.InvalidArguments
+        :raises dbus.Exception: org.bluez.Error.Failed
+        """
         self._interface.RemoveDevice(dev_path)
 
-    def register_agent(self, path, caps):
-        """Register a pairing agent on this adapter"""
-        self._interface.RegisterAgent(path, caps)
+    def register_agent(self, path, capability):
+        """
+        This registers the adapter wide agent.
+
+        The object path defines the path the of the agent
+        that will be called when user input is needed.
+
+        If an application disconnects from the bus all
+        of its registered agents will be removed.
+
+        :param str path: Freely definable path for agent e.g., '/test/agent'
+        :param str capability: The capability parameter can have the values
+            "DisplayOnly", "DisplayYesNo", "KeyboardOnly" and "NoInputNoOutput"
+            which reflects the input and output capabilities of the agent.
+            If an empty string is used it will fallback to "DisplayYesNo".
+        :raises dbus.Exception: org.bluez.Error.InvalidArguments
+        :raises dbus.Exception: org.bluez.Error.AlreadyExists
+        """
+        self._interface.RegisterAgent(path, capability)
 
     def unregister_agent(self, path):
-        """Unregister a pairing agent on this adapter"""
+        """
+        This unregisters the agent that has been previously
+        registered. The object path parameter must match the
+        same value that has been used on registration.
+
+        :param str path: Previously defined path for agent
+            e.g., '/test/agent'
+        :raises dbus.Exception: org.bluez.Error.DoesNotExist
+        """
         self._interface.UnregisterAgent(path)
