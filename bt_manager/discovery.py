@@ -7,7 +7,22 @@ from attributes import ATTRIBUTES
 
 
 class BTDiscoveryInfo:
-    """Parser for XML BT discovery service record provided by Bluez"""
+    """
+    Parser for XML discovery service record obtained from the
+    bluetooth service discovery procedure.
+
+    The XML parser recursively and iteratively translates all known
+    service UUIDs and attribute UUIDs to their human readable
+    form thus allowing a BTDiscoveryInfo instance to be printed
+    e.g., for debugging purposes.
+
+    :param str text: An XML service record return as part of
+        the device service discovery procedure.
+
+    .. note:: A dictionary of XML service records is obtained
+        by executing the :py:meth:`.BTDevice.discover_services`
+        method.
+    """
     def __init__(self, text):
         tree = XML(text)
         rec = tree.iter().next()

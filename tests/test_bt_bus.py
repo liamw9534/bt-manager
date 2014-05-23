@@ -965,12 +965,6 @@ class BTMediaTest(unittest.TestCase):
         media.register_endpoint(path, endpoint.get_properties())
         media.unregister_endpoint(path)
 
-    def test_media_player(self):
-        media = bt_manager.BTMedia()
-        path = '/test/player'
-        media.register_player(path, None)
-        media.unregister_player(path)
-
 
 class BTAgentTest(unittest.TestCase):
 

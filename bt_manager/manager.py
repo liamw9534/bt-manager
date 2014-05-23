@@ -8,26 +8,31 @@ class BTManager(BTInterface):
     Wrapper around dbus to encapsulate the org.bluez.manager interface
     which notionally is used to manage available bluetooth adapters.
 
-    See also :py:class:`adapter.BTAdapter`
+    :Properties:
+
+    * **Adapters(list{str}) [readonly]**: List of adapter object paths.
+
+    See also :py:class:`.BTAdapter`
     """
 
     SIGNAL_ADAPTER_ADDED = 'AdapterAdded'
     """
-    :function signal(signal_name, user_arg, object_path): Signal
-        notifying when an adapter is added.
+    :signal AdapterAdded(signal_name, user_arg, object_path):
+        Signal notifying when an adapter is added.
     """
     SIGNAL_ADAPTER_REMOVED = 'AdapterRemoved'
     """
-    :function signal(signal_name, user_arg, object_path): Signal
-        notifying when an adapter is removed.
-        .. note: In case all adapters are removed this signal will not be
-        emitted. The AdapterRemoved signal has to be used to detect
-        that no default adapter is selected or available anymore.
+    :signal AdapterRemoved(signal_name, user_arg, object_path):
+        Signal notifying when an adapter is removed.
+        .. note: In case all adapters are removed this signal will not
+        be emitted. The AdapterRemoved signal has to be used to
+        detect that no default adapter is selected or available
+        anymore.
     """
     SIGNAL_DEFAULT_ADAPTER_CHANGED = 'DefaultAdapterChanged'
     """
-    :function signal(signal_name, user_arg, object_path): Signal notifying
-        when the default adapter has been changed.
+    :signal DefaultAdapterChanged(signal_name, user_arg, object_path):
+        Signal notifying when the default adapter has been changed.
     """
 
     def __init__(self):

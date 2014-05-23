@@ -302,3 +302,15 @@ SERVICES = {
     __HDPSink.uuid16: __HDPSink,
     __HDPSink.name: __HDPSink,
 }
+"""
+:data dict SERVICES: A dictionary of service UUIDs which allows all
+    bluetooth standard-based services to be keyed by either
+    their short-form name or their UUID16 value.
+
+    Example:
+
+    ``SERVICES['AudioSource']`` shall return a :py:class:`.BTUUID16`
+        denoting the A2DP audio source profile UUID.
+    ``SERVICES['110A']`` shall return the same :py:class:`.BTUUID16`
+        denoting the A2DP audio source profile UUID.
+"""

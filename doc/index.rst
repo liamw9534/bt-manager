@@ -8,10 +8,11 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   intro
    concepts
    examples
+   config
    apidoc
+   glossary
 
 
 Indices and tables

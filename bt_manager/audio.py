@@ -16,36 +16,99 @@ from exceptions import BTIncompatibleTransportAccessType, \
 
 
 class BTAudio(BTGenericDevice):
-    """Wrapper around Dbus to encapsulate the BT audio entity"""
+    """
+    Wrapper around dbus to encapsulate the org.bluez.Audio
+    interface.
 
+    :Properties:
+
+    * **State(str) [readonly]**: Possible values: "disconnected",
+        "connecting", "connected" with possible state transitions:
+
+      * "disconnected" -> "connecting"
+        Either an incoming or outgoing connection attempt
+        ongoing.
+      * "connecting" -> "disconnected"
+        Connection attempt failed
+      * "connecting" -> "connected"
+        Successfully connected
+      * "connected" -> "disconnected"
+        Disconnected from the remote device
+
+    See also: :py:class:`.BTGenericDevice` for setup params.
+    """
     def __init__(self, *args, **kwargs):
         BTGenericDevice.__init__(self, addr='org.bluez.Audio',
                                  *args, **kwargs)
 
     def connect(self):
-        """Connect all supported audio profiles on the device."""
-        self._interface.Connect()
+        """
+        Connect all supported audio profiles on the device.
+
+        :return:
+
+        .. note:: This may invoke any registered media
+            endpoints where media profiles are compatible.
+        """
+        return self._interface.Connect()
 
     def disconnect(self):
-        """Disconnect all audio profiles on the device"""
-        self._interface.Disconnect()
+        """
+        Disconnect all audio profiles on the device
+
+        :return:
+
+        .. note:: This may release any registered media
+            endpoints where media profiles are compatible.
+        """
+        return self._interface.Disconnect()
 
 
 class BTAudioSource(BTAudio):
-    """Wrapper around Dbus to encapsulate the BT audio source entity"""
+    """
+    Wrapper around dbus to encapsulate the org.bluez.AudioSource
+    interface.
 
+    See also: :py:class:`.BTAudio`
+    """
     def __init__(self, *args, **kwargs):
         BTGenericDevice.__init__(self, addr='org.bluez.AudioSource',
                                  *args, **kwargs)
 
 
 class BTAudioSink(BTAudio):
-    """Wrapper around Dbus to encapsulate the BT audio sink entity"""
+    """
+    Wrapper around dbus to encapsulate the org.bluez.AudioSink
+    interface
+
+    * **Connected(boolean) [readonly]**: Indicates if a stream is
+        setup to a A2DP sink on the remote device.
+    * **Playing(boolean) [readonly]**: Indicates if a stream is
+        active to a A2DP sink on the remote device.
+
+    See also: :py:class:`.BTAudio`
+    """
 
     SIGNAL_CONNECTED = 'Connected'
+    """
+    :signal Connected(signal_name, user_arg): Sent when a successful
+        connection has been made to the remote A2DP Sink
+    """
     SIGNAL_DISCONNECTED = 'Disconnected'
+    """
+    :signal Disconnected(signal_name, user_arg): Sent when the device has
+        been disconnected from.
+    """
     SIGNAL_PLAYING = 'Playing'
+    """
+    :signal Playing(signal_name, user_arg): Sent when a stream
+        with remote device is started.
+    """
     SIGNAL_STOPPED = 'Stopped'
+    """
+    :signal Stopped(signal_name, user_arg): Sent when a stream with
+        remote device is suspended.
+    """
 
     def __init__(self, *args, **kwargs):
         BTGenericDevice.__init__(self, addr='org.bluez.AudioSink',
@@ -56,16 +119,44 @@ class BTAudioSink(BTAudio):
         self._register_signal_name(BTAudioSink.SIGNAL_STOPPED)
 
     def is_connected(self):
-        """Returns TRUE if a stream is setup to a A2DP sink on
-        the remote device."""
+        """
+        Returns `True` if a stream is setup to a A2DP sink on
+        the remote device, `False` otherwise.
+
+        :return Connected: state of `Connected` attribute
+        :rtype: boolean
+        """
         return self._interface.IsConnected()
 
 
-# SBCAudioCodec does not implement RTP pay/depay or SBC encode/decode.
-# It only implements the necessary parts for creating the media endpoint,
-# negotiating the connection and establishing a media transport.
 class SBCAudioCodec(GenericEndpoint):
+    """
+    SBCAudioCodec is an implementation of a media endpoint that
+    provides common functionality enabling SBC audio source and
+    SBC audio sink media endpoints to be established.
 
+    Since certain procedures are specific to whether or not
+    the endpoint is a source or sink, in particular the trigger
+    points for when the media transport is acquired/release,
+    these parts are left to their respective sub-classes.
+
+    SBCAudioCodec handles the following steps in establishing
+    an endpoint:
+
+    * Populates `properties` with the capabilities of the codec.
+    * `SelectConfiguration`: computes and returns best SBC codec
+        configuration parameters based on device capabilities
+    * `SetConfiguration`: a sub-class notifier function is called
+    * `ClearConfiguration`: nothing is done
+    * `Release`: nothing
+
+    .. warning:: SBCAudioCodec does not yet implement RTP pay/depay or
+        SBC encode/decode. It only implements the necessary parts
+        for creating the media endpoint, negotiating the connection
+        and establishing a media transport.
+
+    See also: :py:class:`SBCAudioSink` and :py:class:`SBCAudioSource`
+    """
     def __init__(self, uuid, path):
         config = SBCCodecConfig(SBCChannelMode.ALL,
                                 SBCSamplingFrequency.ALL,
@@ -84,25 +175,33 @@ class SBCAudioCodec(GenericEndpoint):
         GenericEndpoint.__init__(self, path)
 
     def read_transport(self):
-        """Allow user to read data from media transport"""
+        """
+        Allow user to read data from media transport
+        """
         if ('r' not in self.access_type):
             raise BTIncompatibleTransportAccessType
         return os.read(self.fd, self.write_mtu)
 
     def write_transport(self, data):
-        """Allow user to write data to media transport"""
+        """
+        Allow user to write data to media transport
+        """
         if ('w' not in self.access_type):
             raise BTIncompatibleTransportAccessType
         os.write(self.fd, data)
 
     def _notify_media_transport_available(self, path, transport):
-        """Subclass should implement this to trigger setup once
-        a new media transport is available."""
+        """
+        Subclass should implement this to trigger setup once
+        a new media transport is available.
+        """
         pass
 
     def _acquire_media_transport(self, path, access_type):
-        """Should be called by subclass when it is ready
-        to acquire the media transport file descriptor"""
+        """
+        Should be called by subclass when it is ready
+        to acquire the media transport file descriptor
+        """
         transport = BTMediaTransport(path=path)
         (fd, write_mtu, read_mtu) = transport.acquire(access_type)
         self.fd = fd.take()   # We must do the clean-up later
@@ -111,8 +210,10 @@ class SBCAudioCodec(GenericEndpoint):
         self.access_type = access_type
 
     def _release_media_transport(self, path, access_type):
-        """Should be called by subclass when it is finished
-        with the media transport file descriptor"""
+        """
+        Should be called by subclass when it is finished
+        with the media transport file descriptor
+        """
         os.close(self.fd)   # Clean-up previously taken fd
         transport = BTMediaTransport(path=path)
         transport.release(access_type)
@@ -283,36 +384,51 @@ class SBCAudioCodec(GenericEndpoint):
         return pprint.pformat(self.__dict__)
 
 
-# SBCAudioSink implies the BT adapter takes on the role of a sink and
-# the external device is the source e.g., iPhone, media player
 class SBCAudioSink(SBCAudioCodec):
-    """SBC audio sink media endpoint"""
+    """
+    SBC audio sink media endpoint
+
+    SBCAudioSink implies the BT adapter takes on the role of
+    a sink and the external device is the source e.g.,
+    iPhone, media player.
+
+    Refer to :py:class:`SBCAudioCodec` for basic overview of
+    endpoint steps
+    """
     def __init__(self,
                  path='/endpoint/a2dpsink'):
         uuid = dbus.String(SERVICES['AudioSink'].uuid)
         SBCAudioCodec.__init__(self, uuid, path)
 
     def _fd_ready_handler(self, fd, cb_condition):
-        """Wrapper for calling user callback routine to notify
-        when transport data is ready to read"""
+        """
+        Wrapper for calling user callback routine to notify
+        when transport data is ready to read
+        """
         self.user_cb(fd, self.user_arg)
         return True
 
     def register_fd_ready_event(self, user_cb, user_arg):
-        """Register for fd ready events"""
+        """
+        Register for fd ready events
+        """
         self.user_cb = user_cb
         self.user_arg = user_arg
         self.tag = gobject.io_add_watch(self.fd, gobject.IO_IN,
                                         self._fd_ready_handler)
 
     def unregister_fd_ready_event(self):
-        """Unregister fd ready events"""
+        """
+        Unregister fd ready events
+        """
         gobject.source_remove(self.tag)
 
     def _property_change_event_handler(self, signal, transport, *args):
-        """Handler for property change event.  We catch certain state
+        """
+        Handler for property change event.  We catch certain state
         transitions in order to trigger media transport
-        acquisition/release"""
+        acquisition/release
+        """
         current_state = self.source.State
         if (self.state == 'connected' and current_state == 'playing'):
             self._acquire_media_transport(transport, 'r')
@@ -321,8 +437,10 @@ class SBCAudioSink(SBCAudioCodec):
         self.state = current_state
 
     def _notify_media_transport_available(self, path, transport):
-        """Called by the endpoint when a new media transport is
-        available"""
+        """
+        Called by the endpoint when a new media transport is
+        available
+        """
         self.source = BTAudioSource(dev_path=path)
         self.state = self.source.State
         self.source.add_signal_receiver(self._property_change_event_handler,
@@ -330,19 +448,27 @@ class SBCAudioSink(SBCAudioCodec):
                                         transport)
 
 
-# SBCAudioSource implies the BT adapter takes on the role of source and
-# the external device is the sink e.g., speaker
 class SBCAudioSource(SBCAudioCodec):
-    """SBC audio source media endpoint"""
+    """
+    SBC audio source media endpoint.
+
+    SBCAudioSource implies the adapter takes on the role of
+    source and the external device is the sink e.g., speaker.
+
+    Refer to :py:class:`SBCAudioCodec` for basic overview of
+    endpoint steps
+    """
     def __init__(self,
                  path='/endpoint/a2dpsource'):
         uuid = dbus.String(SERVICES['AudioSource'].uuid)
         SBCAudioCodec.__init__(self, uuid, path)
 
     def _property_change_event_handler(self, signal, transport, *args):
-        """Handler for property change event.  We catch certain state
+        """
+        Handler for property change event.  We catch certain state
         transitions in order to trigger media transport
-        acquisition/release"""
+        acquisition/release
+        """
         current_state = self.sink.State
         if ((self.state == 'disconnected' and current_state == 'connected') or
             (self.state == 'connecting' and
@@ -353,8 +479,10 @@ class SBCAudioSource(SBCAudioCodec):
         self.state = current_state
 
     def _notify_media_transport_available(self, path, transport):
-        """Called by the endpoint when a new media transport is
-        available"""
+        """
+        Called by the endpoint when a new media transport is
+        available
+        """
         self.sink = BTAudioSink(dev_path=path)
         self.state = self.sink.State
         self.sink.add_signal_receiver(self._property_change_event_handler,

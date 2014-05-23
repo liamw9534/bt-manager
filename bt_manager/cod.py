@@ -2,7 +2,33 @@ from __future__ import unicode_literals
 
 
 class BTCoD:
-    """Bluetooth class of device decoder"""
+    """
+    Bluetooth class of device decoder for providing
+    a human readable form of the device class value.
+
+    The class of device is a 24-bit number allowing different
+    types of bluetooth devices to be described consistently
+    and succinctly using a hierarchical scheme.
+
+    * **Major Service**: The major services that the
+        device supports.  Several values can be OR'd together
+        to form a device supporting multiple major services
+        e.g., telephony, networking and audio could be
+        the combined service set for a device.
+    * **Major Device**: The form-factor or major type of device
+        which may only take a single value e.g., Laptop,
+        Toy, Health Device, Phone, etc.
+    * **Minor Device**: The minor function of the device whose
+        range of values depends on the major function e.g.,
+        Car audio, SmartPhone, etc.
+
+    :param integer cod: 24-bit integer value representing the
+        class of device.
+
+    .. note:: The class of device may be obtained from both
+        the :py:class:`.BTAdapter` and :py:class:`.BTDevice`
+        classes using the `Class` attribute.
+    """
 
     _MAJOR_SERVICE_POS = 13
     _MAJOR_SERVICE_MASK = 0xFFE000
@@ -135,13 +161,14 @@ class BTCoD:
     }
 
     def __init__(self, cod):
-        """Initialize the class of device number for
-        subsequent decoding"""
         self.cod = cod
 
     @property
     def major_service_class(self):
-        """Return the major service class property decoded"""
+        """
+        Return the major service class property decoded e.g.,
+        Audio, Telephony, etc
+        """
         major_service = []
         for i in BTCoD._MAJOR_SERVICE_CLASS.keys():
             if (self.cod & i):
@@ -150,14 +177,20 @@ class BTCoD:
 
     @property
     def major_device_class(self):
-        """Return the major device class property decoded"""
+        """
+        Return the major device class property decoded e.g.,
+        Computer, Audio/Video, Toy, etc.
+        """
         return BTCoD._MAJOR_DEVICE_CLASS.get(self.cod &
                                              BTCoD._MAJOR_DEVICE_MASK,
                                              'Unknown')
 
     @property
     def minor_device_class(self):
-        """Return the minor device class property decoded"""
+        """
+        Return the minor device class property decoded e.g.,
+        Scanner, Printer, Loudspeaker, Camera, etc.
+        """
         minor_device = []
         minor_lookup = BTCoD._MINOR_DEVICE_CLASS.get(self.cod &
                                                      BTCoD._MAJOR_DEVICE_MASK,

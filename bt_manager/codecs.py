@@ -6,11 +6,17 @@ A2DP_CODECS = {'SBC': 0x00,
                'MPEG24': 0x02,
                'ATRAC': 0x03,
                }
+"""
+Enumeration of codec types supported by A2DP profile
+"""
 
 SBCCodecConfig = namedtuple('SBCCodecConfig',
                             'channel_mode frequency allocation_method '
                             'subbands block_length min_bitpool '
                             'max_bitpool')
+"""
+Named tuple collection of SBC A2DP audio profile properties
+"""
 
 
 class SBCSamplingFrequency:

@@ -53,8 +53,6 @@ class Signal():
         self.user_callback(self.signal, self.user_arg, *args)
 
 
-# This class is not intended to be instantiated directly and should be
-# sub-classed with a concrete implementation for an interface
 class BTSimpleInterface:
     """
     Wrapper around dbus to encapsulated a BT simple interface
@@ -95,7 +93,7 @@ class BTInterface(BTSimpleInterface):
 
     SIGNAL_PROPERTY_CHANGED = 'PropertyChanged'
     """
-    :function signal(signal_name, user_arg, property_name, property_value):
+    :signal PropertyChanged(sig_name, user_arg, prop_name, prop_value):
         Signal notifying when a property has changed.
     """
 
@@ -127,7 +125,8 @@ class BTInterface(BTSimpleInterface):
 
         :param func callback_fn: User-defined callback function to call when
             signal triggers
-        :param str signal: Signal name e.g., :py:attr:`SIGNAL_PROPERTY_CHANGED`
+        :param str signal: Signal name e.g.,
+            :py:attr:`.BTInterface.SIGNAL_PROPERTY_CHANGED`
         :param user_arg: User-defined callback argument to be passed with
             callback function
         :return:

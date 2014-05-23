@@ -6,17 +6,46 @@ Generic
 =======
 
 
-Service Discovery Helpers
--------------------------
+Service & Discovery Helpers
+---------------------------
 
-.. automodule:: bt_manager.serviceuuids
-    :members: SERVICES
+.. py:data:: bt_manager.serviceuuids.SERVICES
+
+:data dict SERVICES: A dictionary of service UUIDs which allows all
+    bluetooth standard-based services to be keyed by either
+    their short-form name or their UUID16 value.
+
+    Example:
+
+    ``SERVICES['AudioSource']`` shall return a :py:class:`.BTUUID16`
+        denoting the A2DP audio source profile UUID.
+    ``SERVICES['110A']`` shall return the same :py:class:`.BTUUID16`
+        denoting the A2DP audio source profile UUID.
+
+.. py:data:: bt_manager.attributes.ATTRIBUTES
+
+:data dict ATTRIBUTES: A dictionary of attribute dictionaries which
+    allows all bluetooth standard-based attribute sets associated
+    with a given service UUID to be found.
+
+    Example:
+
+    ``ATTRIBUTES['*']`` shall return a dictionary of the universal
+    	service attributes.
+    ``ATTRIBUTES['*']['0000']`` shall return the universal service
+    	attribute name string for attribute `0000` which is
+    	`ServiceRecordHandle` in this instance.
+    ``ATTRIBUTES['110A']`` shall return the audio source service
+    	attributes dictionary.
 
 .. automodule:: bt_manager.attributes
     :members: ATTRIBUTES
 
 .. automodule:: bt_manager.uuid
-    :members: BTUUID, BTUUID16, BTUUID32
+    :members: BTUUID, BTUUID16, BTUUID32, BASE_UUID
+
+.. automodule:: bt_manager.discovery
+    :members: BTDiscoveryInfo
 
 
 Device Identification
@@ -29,9 +58,20 @@ Device Identification
 Vendor Identification
 ---------------------
 
-.. automodule:: bt_manager.vendors
-    :members: VENDORS
+.. py:data:: bt_manager.vendors.VENDORS
 
+:data dict VENDOR: A dictionary of vendor IDs which allows all
+    registered bluetooth vendors to be keyed by their unique vendor
+    ID to obtain the vendor name string.
+
+    Example:
+
+    ``VENDORS[2]`` shall return `Intel Corp.`
+
+    ``VENDORS[25]`` shall return `Broadcom Corporation`
+
+.. note:: The device vendor ID can be obtained from the :py:class:`.BTDevice`
+	class' `Vendor` attribute following the service discovery procedure.
 
 Bluetooth Interfaces & Services
 ===============================
@@ -114,6 +154,12 @@ Audio
     :inherited-members:
     :show-inheritance:
 
+.. automodule:: bt_manager.codecs
+    :members: A2DP_CODECS, SBCCodecConfig, SBCSamplingFrequency, SBCBlocks, \
+		SBCChannelMode, SBCAllocationMethod, SBCSubbands
+    :inherited-members:
+    :show-inheritance:
+
 
 Headset
 -------
@@ -130,6 +176,8 @@ Exceptions
 ----------
 
 .. automodule:: bt_manager.exceptions
-    :members: __all__
+    :members: BTSignalNameNotRecognisedException, BTDeviceNotSpecifiedException,
+    	BTRejectedException, BTInvalidConfiguration, BTIncompatibleTransportAccessType,
+    	BTUUIDNotSpecifiedException
 	:inherited-members:
     :show-inheritance:

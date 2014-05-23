@@ -6,7 +6,37 @@ from exceptions import BTRejectedException
 
 
 class BTAgent(dbus.service.Object):
-    """Simple BT device pairing agent"""
+    """
+    Simple BT device pairing agent.
+
+    A bluetooth pairing agent is responsible for admitting
+    new devices onto the system and registering them
+    for subsequent use.  The procedure is abstracted away
+    into a service object that implements a few procedures
+    depending on the type of pairing scheme in use.
+
+    Different pairing schemes are required since some
+    devices do not have displays or keypads allowing
+    them to enter passkeys or confirm passkeys.
+
+    The SSP (Secure Simple Pairing) schemes that can
+    be supported using this agent are:
+
+    * `Just works`: No user interaction required.
+    * `Numeric comparison`: A pass key is displayed which
+        the receiving device must confirm with a
+        binary yes/no response.
+    * `Passkey entry`: A pass key must be entered manually
+        which the receiving device must confirm by also
+        entering the same pass key.
+
+    The pairing scheme selected will be dependent on
+    the `capability` of the agent which is defined
+    when the agent is registered via the
+    :py:meth:`.BTAdapter.register_agent` method.
+
+    See also: :py:class:`.BTAdapter`
+    """
 
     NOTIFY_ON_RELEASE = 'Release'
     NOTIFY_ON_AUTHORIZE = 'Authorize'
