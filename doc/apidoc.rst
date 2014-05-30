@@ -156,7 +156,7 @@ Audio
 
 .. automodule:: bt_manager.codecs
     :members: A2DP_CODECS, SBCCodecConfig, SBCSamplingFrequency, SBCBlocks, \
-		SBCChannelMode, SBCAllocationMethod, SBCSubbands
+		SBCChannelMode, SBCAllocationMethod, SBCSubbands, SBCCodec
     :inherited-members:
     :show-inheritance:
 

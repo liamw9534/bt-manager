@@ -23,7 +23,15 @@ A library for managing bluetooth devices using Python, Bluez and DBus.
 Installation
 ============
 
-Install by running::
+Installing the RTP/SBC codec (this must be done first):
+
+    cd codecs
+    sudo make install
+
+Note: the default platform is x86 (mmx).  To build for a different platform e.g., armv6
+then run `sudo make install PLATFORM=armv6` instead.
+
+Install the python library by running:
 
     pip install BT-Manager
 
@@ -55,8 +63,8 @@ Initial release supporting Bluez 4.x dbus API with following interfaces:
 Services:
 
 - BTAgent (org.bluez.Agent)
-- SBCAudioSink (org.bluez.MediaEndpoint): endpoint/transport setup only
-- SBCAudioSource (org.bluez.MediaEndpoint): endpoint/transport setup only
+- SBCAudioSink (org.bluez.MediaEndpoint): endpoint/transport for connecting A2DP SBC source
+- SBCAudioSource (org.bluez.MediaEndpoint): endpoint/transport for connecting A2DP SBC sink
 
 Other:
 

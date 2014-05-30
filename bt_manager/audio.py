@@ -9,7 +9,7 @@ from device import BTGenericDevice
 from media import GenericEndpoint, BTMediaTransport
 from codecs import SBCChannelMode, SBCSamplingFrequency, \
     SBCAllocationMethod, SBCSubbands, SBCBlocks, A2DP_CODECS, \
-    SBCCodecConfig
+    SBCCodecConfig, SBCCodec
 from serviceuuids import SERVICES
 from exceptions import BTIncompatibleTransportAccessType, \
     BTInvalidConfiguration
@@ -150,10 +150,13 @@ class SBCAudioCodec(GenericEndpoint):
     * `ClearConfiguration`: nothing is done
     * `Release`: nothing
 
-    .. warning:: SBCAudioCodec does not yet implement RTP pay/depay or
-        SBC encode/decode. It only implements the necessary parts
-        for creating the media endpoint, negotiating the connection
-        and establishing a media transport.
+    In additional to endpoint establishment, the class also has
+    transport read and write functions which will handle the
+    required SBC media encoding/decoding and RTP encapsulation.
+
+    The user may also register for `transport ready` events
+    which allows transport read and write operations to be
+    properly synchronized.
 
     See also: :py:class:`SBCAudioSink` and :py:class:`SBCAudioSource`
     """
@@ -168,27 +171,99 @@ class SBCAudioCodec(GenericEndpoint):
         caps = SBCAudioCodec._make_config(config)
         codec = dbus.Byte(A2DP_CODECS['SBC'])
         delayed_reporting = dbus.Boolean(True)
+        self.tag = None
         self.properties = dbus.Dictionary({'UUID': uuid,
                                            'Codec': codec,
                                            'DelayReporting': delayed_reporting,
                                            'Capabilities': caps})
         GenericEndpoint.__init__(self, path)
 
+    def _transport_ready_handler(self, fd, cb_condition):
+        """
+        Wrapper for calling user callback routine to notify
+        when transport data is ready to read
+        """
+        self.user_cb(self.user_arg)
+        return True
+
+    def register_transport_ready_event(self, user_cb, user_arg):
+        """
+        Register for transport ready events.  The `transport ready`
+        event is raised via a user callback.  If the endpoint
+        is configured as a source, then the user may then
+        call :py:meth:`write_transport` in order to send data to
+        the associated sink.
+        Otherwise, if the endpoint is configured as a sink, then
+        the user may call :py:meth:`read_transport` to read
+        from the associated source instead.
+
+        :param func user_cb: User defined callback function.  It
+            must take one parameter which is the user's callback
+            argument.
+        :param user_arg: User defined callback argument.
+        :return:
+
+        See also: :py:meth:`unregister_transport_ready_event`
+        """
+        self.user_cb = user_cb
+        self.user_arg = user_arg
+
+        if ('r' in self.access_type):
+            io_event = gobject.IO_IN
+        else:
+            io_event = gobject.IO_OUT
+
+        self.tag = gobject.io_add_watch(self.fd, io_event,
+                                        self._transport_ready_handler)
+
+    def unregister_transport_ready_event(self):
+        """
+        Unregister previously registered `transport ready`
+        events.
+
+        See also: :py:meth:`register_transport_ready_event`
+        """
+        if (self.tag):
+            gobject.source_remove(self.tag)
+            self.tag = None
+
     def read_transport(self):
         """
-        Allow user to read data from media transport
+        Read data from media transport.
+        The returned data payload is SBC decoded and has
+        all RTP encapsulation removed.
+
+        :return data: Payload data that has been decoded,
+            with RTP encapsulation removed.
+        :rtype: array{byte}
         """
         if ('r' not in self.access_type):
             raise BTIncompatibleTransportAccessType
-        return os.read(self.fd, self.write_mtu)
+        return self.codec.decode(self.fd, self.read_mtu)
 
     def write_transport(self, data):
         """
-        Allow user to write data to media transport
+        Write data to media transport.  The data is
+        encoded using the SBC codec and RTP encapsulated
+        before being written to the transport file
+        descriptor.
+
+        :param array{byte} data: Payload data to encode,
+            encapsulate and send.
         """
         if ('w' not in self.access_type):
             raise BTIncompatibleTransportAccessType
-        os.write(self.fd, data)
+        return self.codec.encode(self.fd, self.write_mtu, data)
+
+    def close_transport(self):
+        """
+        Forcibly close previously acquired media transport.
+
+        .. note:: The user should first make sure any transport
+            event handlers are unregistered first.
+        """
+        self._release_media_transport(self.path,
+                                      self.access_type)
 
     def _notify_media_transport_available(self, path, transport):
         """
@@ -203,20 +278,24 @@ class SBCAudioCodec(GenericEndpoint):
         to acquire the media transport file descriptor
         """
         transport = BTMediaTransport(path=path)
-        (fd, write_mtu, read_mtu) = transport.acquire(access_type)
+        (fd, read_mtu, write_mtu) = transport.acquire(access_type)
         self.fd = fd.take()   # We must do the clean-up later
         self.write_mtu = write_mtu
         self.read_mtu = read_mtu
         self.access_type = access_type
+        self.path = path
 
     def _release_media_transport(self, path, access_type):
         """
         Should be called by subclass when it is finished
         with the media transport file descriptor
         """
-        os.close(self.fd)   # Clean-up previously taken fd
-        transport = BTMediaTransport(path=path)
-        transport.release(access_type)
+        try:
+            os.close(self.fd)   # Clean-up previously taken fd
+            transport = BTMediaTransport(path=path)
+            transport.release(access_type)
+        except:
+            pass
 
     @staticmethod
     def _default_bitpool(frequency, channel_mode):
@@ -371,6 +450,12 @@ class SBCAudioCodec(GenericEndpoint):
                                          block_length,
                                          min_bitpool,
                                          max_bitpool)
+
+        print 'Selected:', selected_config
+
+        # Create SBC codec based on selected configuration
+        self.codec = SBCCodec(selected_config)
+
         dbus_val = SBCAudioCodec._make_config(selected_config)
         return dbus_val
 
@@ -399,29 +484,6 @@ class SBCAudioSink(SBCAudioCodec):
                  path='/endpoint/a2dpsink'):
         uuid = dbus.String(SERVICES['AudioSink'].uuid)
         SBCAudioCodec.__init__(self, uuid, path)
-
-    def _fd_ready_handler(self, fd, cb_condition):
-        """
-        Wrapper for calling user callback routine to notify
-        when transport data is ready to read
-        """
-        self.user_cb(fd, self.user_arg)
-        return True
-
-    def register_fd_ready_event(self, user_cb, user_arg):
-        """
-        Register for fd ready events
-        """
-        self.user_cb = user_cb
-        self.user_arg = user_arg
-        self.tag = gobject.io_add_watch(self.fd, gobject.IO_IN,
-                                        self._fd_ready_handler)
-
-    def unregister_fd_ready_event(self):
-        """
-        Unregister fd ready events
-        """
-        gobject.source_remove(self.tag)
 
     def _property_change_event_handler(self, signal, transport, *args):
         """

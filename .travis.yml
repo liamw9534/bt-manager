@@ -6,10 +6,11 @@ python:
 install:
   - "sudo apt-get install python-dbus python-gobject"
   - "sudo pip install coveralls flake8"
+  - "sudo make -C codecs install"
 
 script:
   - "flake8 $(find . -iname '*.py')"
-  - "nosetests --with-coverage --cover-package=bt_manager"
+  - "nosetests --with-coverage --cover-package=bt_manager tests"
 
 after_success:
   - "coveralls"

@@ -5,6 +5,7 @@ import unittest
 import bt_manager
 import mock
 import dbus
+import os
 
 
 class MockDBusInterface:
@@ -1304,13 +1305,12 @@ class SBCAudioTest(unittest.TestCase):
         actual_dbus = media.SelectConfiguration(dbus_caps)
         self.assertEqual(actual_dbus, expected_dbus)
 
-    @mock.patch('os.write')
     @mock.patch('os.close')
     @mock.patch('dbus.SystemBus')
     @mock.patch('bt_manager.audio.BTAudioSink')
     @mock.patch('bt_manager.audio.BTMediaTransport')
     def test_sbc_audio_source(self, patched_transport, patched_audio,
-                              patched_system_bus, mock_close, mock_write):
+                              patched_system_bus, mock_close):
 
         mock_system_bus = mock.MagicMock()
         patched_system_bus.return_value = mock_system_bus
@@ -1349,9 +1349,9 @@ class SBCAudioTest(unittest.TestCase):
                                                                bt_manager.BTAudioSink.SIGNAL_PROPERTY_CHANGED,  # noqa
                                                                transport)
 
-        fd_value = 12
-        read_mtu = 111
-        write_mtu = 222
+        fd_value = os.open('/dev/null', os.O_WRONLY)
+        read_mtu = 503
+        write_mtu = 503
         fd = mock.MagicMock()
         fd.take.return_value = fd_value
         mock_transport.acquire.return_value = (fd, write_mtu, read_mtu)
@@ -1365,9 +1365,8 @@ class SBCAudioTest(unittest.TestCase):
         mock_transport.acquire.assert_called_once_with('w')
         mock_audio.State = 'disconnected'
 
-        data = 'dummy data'
+        data = [b'\x00'] * 512
         media.write_transport(data)
-        mock_write.assert_called_once_with(fd_value, data)
 
         try:
             exception_caught = False
@@ -1384,13 +1383,12 @@ class SBCAudioTest(unittest.TestCase):
         media.ClearConfiguration()
         media.Release()
 
-    @mock.patch('os.read')
     @mock.patch('os.close')
     @mock.patch('dbus.SystemBus')
     @mock.patch('bt_manager.audio.BTAudioSource')
     @mock.patch('bt_manager.audio.BTMediaTransport')
     def test_sbc_audio_sink(self, patched_transport, patched_audio,
-                            patched_system_bus, mock_close, mock_read):
+                            patched_system_bus, mock_close):
 
         mock_system_bus = mock.MagicMock()
         patched_system_bus.return_value = mock_system_bus
@@ -1429,9 +1427,9 @@ class SBCAudioTest(unittest.TestCase):
                                                                'PropertyChanged',  # noqa
                                                                transport)
 
-        fd_value = 12
-        read_mtu = 111
-        write_mtu = 222
+        fd_value = os.open('tests/vector.dat', os.O_RDONLY)
+        read_mtu = 503
+        write_mtu = 503
         fd = mock.MagicMock()
         fd.take.return_value = fd_value
         mock_transport.acquire.return_value = (fd, write_mtu, read_mtu)
@@ -1445,10 +1443,8 @@ class SBCAudioTest(unittest.TestCase):
         mock_transport.acquire.assert_called_once_with('r')
         mock_audio.State = 'connected'
 
-        mock_read.return_value = 'dummy data'
         data = media.read_transport()
-        mock_read.assert_called_once_with(fd_value, write_mtu)
-        self.assertEqual(data, mock_read.return_value)
+        self.assertEqual(len(data), 512)
 
         try:
             exception_caught = False
