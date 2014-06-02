@@ -25,11 +25,10 @@ Installation
 
 Installing the RTP/SBC codec (this must be done first):
 
-    cd codecs
-    sudo make install
+    sudo make -C codecs install
 
 Note: the default platform is x86 (mmx).  To build for a different platform e.g., armv6
-then run `sudo make install PLATFORM=armv6` instead.
+then run ``sudo make -C codecs install PLATFORM=armv6`` instead.
 
 Install the python library by running:
 
