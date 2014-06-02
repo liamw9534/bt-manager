@@ -451,8 +451,6 @@ class SBCAudioCodec(GenericEndpoint):
                                          min_bitpool,
                                          max_bitpool)
 
-        print 'Selected:', selected_config
-
         # Create SBC codec based on selected configuration
         self.codec = SBCCodec(selected_config)
 
