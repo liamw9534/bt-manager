@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 from distutils.version import StrictVersion
 import cffi
-import os
 
 __version__ = '0.1.0'
 
