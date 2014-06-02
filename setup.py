@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import re
 
-from distutils.command.build import build
 from setuptools import setup, find_packages
 
 
