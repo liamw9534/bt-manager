@@ -6,7 +6,7 @@ BT-Manager
     :target: https://pypi.python.org/pypi/BT-Manager/
     :alt: Latest PyPI version
 
-.. image:: https://pypip.in/download/BT-Manager/badge.png
+.. image:: https://pypip.in/download/BT-Manager/badge.png?update
     :target: https://pypi.python.org/pypi/BT-Manager/
     :alt: Number of PyPI downloads
 
