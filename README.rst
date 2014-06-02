@@ -2,7 +2,7 @@
 BT-Manager
 ****************************
 
-.. image:: https://pypip.in/version/BT-Manager/badge.png?latest
+.. image:: https://pypip.in/version/BT-Manager/badge.png?update
     :target: https://pypi.python.org/pypi/BT-Manager/
     :alt: Latest PyPI version
 
