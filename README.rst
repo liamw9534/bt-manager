@@ -47,8 +47,8 @@ Project resources
 Changelog
 =========
 
-v0.1.0 (UNRELEASED)
-----------------------------------------
+v0.1.0
+------
 
 Initial release supporting Bluez 4.x dbus API with following interfaces:
 
