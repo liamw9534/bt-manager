@@ -35,6 +35,12 @@ Install the python library by running:
     pip install BT-Manager
 
 
+Documentation
+=============
+
+Documentation is hosted at https://pythonhosted.org/BT-Manager
+
+
 Project resources
 =================
 
