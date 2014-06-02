@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 from distutils.version import StrictVersion
 import cffi
+import os
 
 __version__ = '0.1.0'
 
@@ -9,7 +10,8 @@ if StrictVersion(cffi.__version__) < StrictVersion('0.7'):
             'bt_manager requires cffi >= 0.7, but found %s' % cffi.__version__)
 
 ffi = cffi.FFI()
-header_file = '/usr/local/include/rtpsbc.h'
+cwd = os.path.dirname(__file__)
+header_file = os.path.join(cwd, '../codecs/rtpsbc.h')
 with open(header_file) as fh:
     header = fh.read()
     ffi.cdef(header)

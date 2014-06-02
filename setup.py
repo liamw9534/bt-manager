@@ -12,17 +12,6 @@ def get_version(filename):
     return metadata['version']
 
 
-class cffi_build(build):
-    """This is a shameful hack to ensure that cffi is present when we specify
-    ext_modules. We can't do this eagerly because setup_requires hasn't run
-    yet.
-    """
-    def finalize_options(self):
-        from bt_manager import ffi
-        self.distribution.ext_modules = [ffi.verifier.get_extension()]
-        build.finalize_options(self)
-
-
 setup(
     name='BT-Manager',
     version=get_version('bt_manager/__init__.py'),
@@ -33,6 +22,7 @@ setup(
     description='Python-based Bluetooth Device Management',
     long_description=open('README.rst').read(),
     packages=find_packages(exclude=['tests', 'tests.*']),
+    data_files=[('codecs', ['codecs/rtpsbc.h'])],
     ext_package='rtpsbc',
     zip_safe=False,
     include_package_data=True,
@@ -41,7 +31,6 @@ setup(
         'cffi >= 0.7',
     ],
     setup_requires=['cffi >= 0.7'],
-    cmd_class={'build': cffi_build},
     test_suite='nose.collector',
     tests_require=[
         'nose',
