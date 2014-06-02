@@ -39,7 +39,7 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: Apache Software License',
-        'Operating System :: Linux',
+        'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Topic :: Software Development :: Libraries',
