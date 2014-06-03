@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS =
-INSTALL_PREFIX = /usr/local/lib
+INSTALL_PREFIX = /usr
 HEADER = rtpsbc.h
 
 ifndef PLATFORM
@@ -25,7 +25,7 @@ clean:
 	rm -f $(OBJS) $(TARGET)
 
 install: $(TARGET)
-	cp $(TARGET) $(INSTALL_PREFIX)
-	cp $(basename $(TARGET)).pc $(INSTALL_PREFIX)/pkgconfig
-	cp $(HEADER) /usr/local/include
+	cp $(TARGET) $(INSTALL_PREFIX)/lib
+	cp $(basename $(TARGET)).pc $(INSTALL_PREFIX)/lib/pkgconfig
+	cp $(HEADER) $(INSTALL_PREFIX)/include
 	ldconfig
