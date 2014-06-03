@@ -3,5 +3,8 @@ include .travis.yml
 include LICENSE
 include MANIFEST.in
 include README.rst
+include bt_manager/*.h
 
 recursive-include tests *.py
+recursive-include demo *.py
+recursive-include codecs *.c *.h *.pc Makefile

@@ -11,7 +11,7 @@ if StrictVersion(cffi.__version__) < StrictVersion('0.7'):
 
 ffi = cffi.FFI()
 cwd = os.path.dirname(__file__)
-header_file = os.path.join(cwd, '../codecs/rtpsbc.h')
+header_file = os.path.join(cwd, 'rtpsbc.h')
 with open(header_file) as fh:
     header = fh.read()
     ffi.cdef(header)

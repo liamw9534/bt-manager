@@ -21,8 +21,6 @@ setup(
     description='Python-based Bluetooth Device Management',
     long_description=open('README.rst').read(),
     packages=find_packages(exclude=['tests', 'tests.*']),
-    data_files=[('codecs', ['codecs/rtpsbc.h'])],
-    ext_package='rtpsbc',
     zip_safe=False,
     include_package_data=True,
     install_requires=[
