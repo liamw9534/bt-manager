@@ -345,6 +345,49 @@ def sink_disconnect(args):
         print 'Unable to complete:', sys.exc_info()
 
 
+def input_info(args):
+    if (len(args)):
+        dev_path = args.pop(0)
+    else:
+        print 'Error: Must specify device path'
+        return
+
+    try:
+        ip = bt_manager.BTInput(dev_path=dev_path)
+        print '========================================================='
+        print ip
+    except dbus.exceptions.DBusException:
+        print 'Unable to complete:', sys.exc_info()
+
+
+def input_connect(args):
+    if (len(args)):
+        dev_path = args.pop(0)
+    else:
+        print 'Error: Must specify device path'
+        return
+
+    try:
+        ip = bt_manager.BTInput(dev_path=dev_path)
+        ip.connect()
+    except dbus.exceptions.DBusException:
+        print 'Unable to complete:', sys.exc_info()
+
+
+def input_disconnect(args):
+    if (len(args)):
+        dev_path = args.pop(0)
+    else:
+        print 'Error: Must specify device path'
+        return
+
+    try:
+        sink = bt_manager.BTInput(dev_path=dev_path)
+        sink.disconnect()
+    except dbus.exceptions.DBusException:
+        print 'Unable to complete:', sys.exc_info()
+
+
 def source_info(args):
     if (len(args)):
         dev_path = args.pop(0)
@@ -634,6 +677,15 @@ cmd_table = {'help': CmdEntry(cmd_help,
              'exit': CmdEntry(exit_cleanup,
                               'Cleanup and exit',
                               None),
+             'input-info': CmdEntry(input_info,
+                                    'Input device properties',
+                                    '<dev_path>'),
+             'input-connect': CmdEntry(input_connect,
+                                       'Input device connect',
+                                       '<dev_path>'),
+             'input-disconnect': CmdEntry(input_disconnect,
+                                          'Input device connect',
+                                          '<dev_path>'),
              }
 
 

@@ -3,7 +3,7 @@ from distutils.version import StrictVersion
 import cffi
 import os
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 if StrictVersion(cffi.__version__) < StrictVersion('0.7'):
         raise RuntimeError(
@@ -35,6 +35,7 @@ from bt_manager.interface import BTSimpleInterface       # noqa
 from bt_manager.interface import BTInterface             # noqa
 from bt_manager.manager import BTManager                 # noqa
 from bt_manager.media import BTMedia, BTMediaTransport   # noqa
+from bt_manager.input import BTInput                     # noqa
 from bt_manager.serviceuuids import SERVICES             # noqa
 from bt_manager.uuid import BTUUID, BTUUID16, BTUUID32   # noqa
 from bt_manager.uuid import BASE_UUID                    # noqa

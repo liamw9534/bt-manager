@@ -408,6 +408,8 @@ class MockDBusInterface:
             self._props = {u'Connected': False}
         elif (self.addr == 'org.bluez.Media'):
             pass
+        elif (self.addr == 'org.bluez.Input'):
+            self._props = {u'Connected': False}
         elif (self.addr == 'org.freedesktop.DBus.Introspectable'):
             self._introspect = \
                 """
@@ -1460,3 +1462,24 @@ class SBCAudioTest(unittest.TestCase):
 
         media.ClearConfiguration()
         media.Release()
+
+
+class BTInputTest(unittest.TestCase):
+
+    def setUp(self):
+        patcher = mock.patch('dbus.Interface', MockDBusInterface)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        patcher = mock.patch('dbus.SystemBus')
+        patched_system_bus = patcher.start()
+        self.addCleanup(patcher.stop)
+        mock_system_bus = mock.MagicMock()
+        patched_system_bus.return_value = mock_system_bus
+        mock_system_bus.get_object.return_value = dbus.ObjectPath('/org/bluez')
+
+    def test_input(self):
+        ip = bt_manager.BTInput(dev_id='00:12:A1:69:85:42')
+        ip.connect()
+        self.assertTrue(ip.Connected)
+        ip.disconnect()
+        self.assertFalse(ip.Connected)

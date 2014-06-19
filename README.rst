@@ -52,6 +52,13 @@ Project resources
 Changelog
 =========
 
+v0.2.0
+------
+
+Added support for:
+
+- BTInput (org.bluez.Input)
+
 v0.1.0
 ------
 
