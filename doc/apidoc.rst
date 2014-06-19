@@ -171,6 +171,16 @@ Headset
     :inherited-members:
     :show-inheritance:
 
+Input
+-----
+
+.. inheritance-diagram:: bt_manager.input
+
+.. automodule:: bt_manager.input
+    :members: BTInput
+    :inherited-members:
+    :show-inheritance:
+
 
 Exceptions
 ----------
