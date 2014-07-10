@@ -72,6 +72,7 @@ class BTSimpleInterface:
         self._bus = dbus.SystemBus()
         self._object = self._bus.get_object('org.bluez', path)
         self._interface = dbus.Interface(self._object, addr)
+        self._path = path
 
 
 # This class is not intended to be instantiated directly and should be
@@ -138,7 +139,8 @@ class BTInterface(BTSimpleInterface):
             self._signals[signal] = s
             self._bus.add_signal_receiver(s.signal_handler,
                                           signal,
-                                          dbus_interface=self._dbus_addr)
+                                          dbus_interface=self._dbus_addr,
+                                          path=self._path)
         else:
             raise BTSignalNameNotRecognisedException
 
