@@ -52,6 +52,11 @@ Project resources
 Changelog
 =========
 
+v0.3.0
+------
+
+Bug fix for issue #1 causing erroneous signal receiver notifications.
+
 v0.2.0
 ------
 
