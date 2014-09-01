@@ -172,6 +172,9 @@ class SBCAudioCodec(GenericEndpoint):
         codec = dbus.Byte(A2DP_CODECS['SBC'])
         delayed_reporting = dbus.Boolean(True)
         self.tag = None
+        self.path = None
+        self.user_cb = None
+        self.user_arg = None
         self.properties = dbus.Dictionary({'UUID': uuid,
                                            'Codec': codec,
                                            'DelayReporting': delayed_reporting,
@@ -183,8 +186,23 @@ class SBCAudioCodec(GenericEndpoint):
         Wrapper for calling user callback routine to notify
         when transport data is ready to read
         """
-        self.user_cb(self.user_arg)
+        if(self.user_cb):
+            self.user_cb(self.user_arg)
         return True
+
+    def _install_transport_ready(self):
+        if ('r' in self.access_type):
+            io_event = gobject.IO_IN
+        else:
+            io_event = gobject.IO_OUT
+
+        self.tag = gobject.io_add_watch(self.fd, io_event,
+                                        self._transport_ready_handler)
+
+    def _uninstall_transport_ready(self):
+        if (self.tag):
+            gobject.source_remove(self.tag)
+            self.tag = None
 
     def register_transport_ready_event(self, user_cb, user_arg):
         """
@@ -208,14 +226,6 @@ class SBCAudioCodec(GenericEndpoint):
         self.user_cb = user_cb
         self.user_arg = user_arg
 
-        if ('r' in self.access_type):
-            io_event = gobject.IO_IN
-        else:
-            io_event = gobject.IO_OUT
-
-        self.tag = gobject.io_add_watch(self.fd, io_event,
-                                        self._transport_ready_handler)
-
     def unregister_transport_ready_event(self):
         """
         Unregister previously registered `transport ready`
@@ -223,9 +233,7 @@ class SBCAudioCodec(GenericEndpoint):
 
         See also: :py:meth:`register_transport_ready_event`
         """
-        if (self.tag):
-            gobject.source_remove(self.tag)
-            self.tag = None
+        self.user_cb = None
 
     def read_transport(self):
         """
@@ -262,8 +270,10 @@ class SBCAudioCodec(GenericEndpoint):
         .. note:: The user should first make sure any transport
             event handlers are unregistered first.
         """
-        self._release_media_transport(self.path,
-                                      self.access_type)
+        if (self.path):
+            self._release_media_transport(self.path,
+                                          self.access_type)
+            self.path = None
 
     def _notify_media_transport_available(self, path, transport):
         """
@@ -284,6 +294,7 @@ class SBCAudioCodec(GenericEndpoint):
         self.read_mtu = read_mtu
         self.access_type = access_type
         self.path = path
+        self._install_transport_ready()
 
     def _release_media_transport(self, path, access_type):
         """
@@ -291,6 +302,7 @@ class SBCAudioCodec(GenericEndpoint):
         with the media transport file descriptor
         """
         try:
+            self._uninstall_transport_ready()
             os.close(self.fd)   # Clean-up previously taken fd
             transport = BTMediaTransport(path=path)
             transport.release(access_type)
@@ -375,17 +387,16 @@ class SBCAudioCodec(GenericEndpoint):
     @dbus.service.method("org.bluez.MediaEndpoint",
                          in_signature="", out_signature="")
     def Release(self):
-        print('Release')
+        pass
 
     @dbus.service.method("org.bluez.MediaEndpoint",
                          in_signature="", out_signature="")
     def ClearConfiguration(self):
-        print('ClearConfiguration')
+        pass
 
     @dbus.service.method("org.bluez.MediaEndpoint",
                          in_signature="ay", out_signature="ay")
     def SelectConfiguration(self, caps):
-        print('SelectConfiguration(%s)' % caps)
         our_caps = SBCAudioCodec._parse_config(self.properties['Capabilities'])
         device_caps = SBCAudioCodec._parse_config(caps)
         frequency = SBCSamplingFrequency.FREQ_44_1KHZ
@@ -460,7 +471,6 @@ class SBCAudioCodec(GenericEndpoint):
     @dbus.service.method("org.bluez.MediaEndpoint",
                          in_signature="oay", out_signature="")
     def SetConfiguration(self, transport, config):
-        print('SetConfiguration(%s, %s)' % (transport, config))
         self._notify_media_transport_available(config.get('Device'), transport)
 
     def __repr__(self):

@@ -22,6 +22,19 @@ def agent_event_handler(*args):
     print 'Agent event:', args
     return True
 
+def agent_event_request_pin_code(event, device):
+    print '\n========================================================='
+    print 'Agent event:', event
+    print 'Device:', device
+    print 'Enter PIN 1234 on device'
+    return dbus.String('1234')
+
+def agent_event_request_pass_key(event, device):
+    print '\n========================================================='
+    print 'Agent event:', event
+    print 'Device:', device
+    print 'Using pass code 1234765'
+    return dbus.UInt32('1234765')
 
 def device_created_ok(*args):
     print '\n========================================================='
@@ -113,6 +126,25 @@ def adapter_set(args):
 
     try:
         adapter.set_property(name, value)
+    except dbus.exceptions.DBusException:
+        print 'Unable to complete:', sys.exc_info()
+
+
+def device_listen(args):
+    if (len(args)):
+        dev_path = args.pop(0)
+    else:
+        print 'Error: Requires device path'
+        return
+
+    global services
+
+    try:
+        device = bt_manager.BTDevice(dev_path=dev_path)
+        device.add_signal_receiver(dump_signal,
+                                   bt_manager.BTDevice.SIGNAL_PROPERTY_CHANGED,
+                                   None)
+        services[dev_path] = device
     except dbus.exceptions.DBusException:
         print 'Unable to complete:', sys.exc_info()
 
@@ -228,6 +260,26 @@ def device_discovery(args):
         print 'Unable to complete:', sys.exc_info()
 
 
+def device_create(args):
+
+    global adapter
+
+    if (len(args) >= 2):
+        path = args.pop(0)
+        dev_id = args.pop(0)
+    else:
+        print 'Error: Must provide agent path and device address'
+        return
+
+    try:
+        caps = 'DisplayYesNo'
+        adapter.create_paired_device(dev_id, path, caps,
+                                     device_created_ok,
+                                     device_created_error)
+    except dbus.exceptions.DBusException:
+        print 'Unable to complete:', sys.exc_info()
+
+
 def discovery_start(args):
 
     global adapter
@@ -255,28 +307,20 @@ def agent_start(args):
 
     if (len(args)):
         path = args.pop(0)
-        if (len(args)):
-            dev_id = args.pop(0)
     else:
         print 'Error: Must provide agent path e.g., /test/agent'
         return
 
     try:
         agent = bt_manager.BTAgent(path=path,
+                                   cb_notify_on_request_pin_code=agent_event_request_pin_code,
+                                   cb_notify_on_request_pass_key=agent_event_request_pass_key,
                                    cb_notify_on_release=agent_event_handler,
                                    cb_notify_on_authorize=agent_event_handler,
                                    cb_notify_on_request_confirmation=agent_event_handler,  # noqa
                                    cb_notify_on_confirm_mode_change=agent_event_handler,   # noqa
                                    cb_notify_on_cancel=agent_event_handler)
         services[path] = agent
-        caps = 'DisplayYesNo'
-
-        if (dev_id):
-            adapter.create_paired_device(dev_id, path, caps,
-                                         device_created_ok,
-                                         device_created_error)
-        else:
-            adapter.register_agent(path, caps)
     except dbus.exceptions.DBusException:
         print 'Unable to complete:', sys.exc_info()
 
@@ -480,12 +524,16 @@ def media_sbc_sink_start(args):
 
     if (len(args)):
         path = args.pop(0)
+        if (len(args)):
+            dev_path = args.pop(0)
+        else:
+            dev_path = None
     else:
         print 'Error: Must provide endpoint path e.g., /test/endpoint/sbc0'
         return
 
     try:
-        ep = bt_manager.SBCAudioSink(path=path)
+        ep = bt_manager.SBCAudioSink(path=path, dev_path=dev_path)
         print '========================================================='
         print repr(ep)
         services[path] = ep
@@ -547,12 +595,16 @@ def media_sbc_source_start(args):
 
     if (len(args)):
         path = args.pop(0)
+        if (len(args)):
+            dev_path = args.pop(0)
+        else:
+            dev_path = None
     else:
         print 'Error: Must provide endpoint path e.g., /test/endpoint/sbc0'
         return
 
     try:
-        ep = bt_manager.SBCAudioSource(path=path)
+        ep = bt_manager.SBCAudioSource(path=path, dev_path=dev_path)
         print '========================================================='
         print repr(ep)
         services[path] = ep
@@ -620,6 +672,12 @@ cmd_table = {'help': CmdEntry(cmd_help,
              'device-discovery': CmdEntry(device_discovery,
                                           'Run BT device discovery session',
                                           '<dev_path>'),
+             'device-listen': CmdEntry(device_listen,
+                                       'Listen for device proeprty change events',
+                                       '<dev_path>'),
+             'device-create': CmdEntry(device_create,
+                                       'Create device',
+                                       '[dev_id e.g., 11:22:33:44:55:66]'),  # noqa
              'discovery-start': CmdEntry(discovery_start,
                                          'Start device discovery',
                                          None),

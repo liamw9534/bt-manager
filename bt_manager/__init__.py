@@ -3,7 +3,7 @@ from distutils.version import StrictVersion
 import cffi
 import os
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 if StrictVersion(cffi.__version__) < StrictVersion('0.7'):
         raise RuntimeError(
