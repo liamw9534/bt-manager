@@ -22,6 +22,7 @@ def agent_event_handler(*args):
     print 'Agent event:', args
     return True
 
+
 def agent_event_request_pin_code(event, device):
     print '\n========================================================='
     print 'Agent event:', event
@@ -29,12 +30,14 @@ def agent_event_request_pin_code(event, device):
     print 'Enter PIN 1234 on device'
     return dbus.String('1234')
 
+
 def agent_event_request_pass_key(event, device):
     print '\n========================================================='
     print 'Agent event:', event
     print 'Device:', device
     print 'Using pass code 1234765'
     return dbus.UInt32('1234765')
+
 
 def device_created_ok(*args):
     print '\n========================================================='
@@ -303,7 +306,6 @@ def discovery_stop(args):
 def agent_start(args):
 
     global services, adapter
-    dev_id = None
 
     if (len(args)):
         path = args.pop(0)
@@ -313,8 +315,8 @@ def agent_start(args):
 
     try:
         agent = bt_manager.BTAgent(path=path,
-                                   cb_notify_on_request_pin_code=agent_event_request_pin_code,
-                                   cb_notify_on_request_pass_key=agent_event_request_pass_key,
+                                   cb_notify_on_request_pin_code=agent_event_request_pin_code,  # noqa
+                                   cb_notify_on_request_pass_key=agent_event_request_pass_key,  # noqa
                                    cb_notify_on_release=agent_event_handler,
                                    cb_notify_on_authorize=agent_event_handler,
                                    cb_notify_on_request_confirmation=agent_event_handler,  # noqa
@@ -673,7 +675,7 @@ cmd_table = {'help': CmdEntry(cmd_help,
                                           'Run BT device discovery session',
                                           '<dev_path>'),
              'device-listen': CmdEntry(device_listen,
-                                       'Listen for device proeprty change events',
+                                       'Listen for device proeprty change events',  # noqa
                                        '<dev_path>'),
              'device-create': CmdEntry(device_create,
                                        'Create device',
